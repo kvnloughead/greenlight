@@ -1,16 +1,31 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 )
 
-// Handler for GET /v1/healthcheck.
+// Handler fork GET /v1/healthcheck.
 // Responds with info about the application, including version and the environment it is running in.
 func (app *application) healthcheck(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "status: available")
-	fmt.Fprintf(w, "version: %s\n", version)
-	fmt.Fprintf(w, "environment: %s\n", app.config.env)
+	data := map[string]string{
+		"status":      "available",
+		"environment": app.config.env,
+		"version":     version,
+	}
+
+	// Marshal data map into JSON for the response.
+	js, err := json.Marshal(data)
+	if err != nil {
+		app.logger.Error(err.Error())
+		http.Error(w, "The server can't process your request.", http.StatusInternalServerError)
+		return
+	}
+
+	// Specify that the response is JSON and send it, appending a newline for QOL.
+	w.Header().Set("Content-type", "application/json")
+	w.Write(append(js, '\n'))
 }
 
 // Handler for POST /v1/movies.
