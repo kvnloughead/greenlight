@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 )
@@ -15,17 +14,12 @@ func (app *application) healthcheck(w http.ResponseWriter, r *http.Request) {
 		"version":     version,
 	}
 
-	// Marshal data map into JSON for the response.
-	js, err := json.Marshal(data)
+	err := app.writeJSON(w, http.StatusOK, data, nil)
 	if err != nil {
 		app.logger.Error(err.Error())
-		http.Error(w, "The server can't process your request.", http.StatusInternalServerError)
+		http.Error(w, "The server couldn't process your request.", http.StatusInternalServerError)
 		return
 	}
-
-	// Specify that the response is JSON and send it, appending a newline for QOL.
-	w.Header().Set("Content-type", "application/json")
-	w.Write(append(js, '\n'))
 }
 
 // Handler for POST /v1/movies.
