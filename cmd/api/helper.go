@@ -9,6 +9,9 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+// An envelope for wrapping responses in an outer JSON object.
+type envelope map[string]any
+
 // Reads ID param from context and parses it as an int64. If the ID doesn't parse to a positive integer, an error is returned.
 func (app *application) readIdParam(r *http.Request) (int64, error) {
 	params := httprouter.ParamsFromContext(r.Context())
@@ -21,10 +24,10 @@ func (app *application) readIdParam(r *http.Request) (int64, error) {
 	return id, nil
 }
 
-// Marshals the data argument into JSON, then prepares and sends the response. The status code is always applied, and the Content-type header is set to application/json. Additional headers can optionally be specified.
+// Marshals the data envelope into JSON, then prepares and sends the response. The status code is always applied, and the Content-type header is set to application/json. Additional headers can optionally be specified.
 //
 // Errors are simply returned to the caller.
-func (app *application) writeJSON(w http.ResponseWriter, status int, data any, headers http.Header) error {
+func (app *application) writeJSON(w http.ResponseWriter, status int, data envelope, headers http.Header) error {
 	// Marshal data map into JSON for the response, indenting for readability.
 	js, err := json.MarshalIndent(data, "", "    ")
 	if err != nil {
