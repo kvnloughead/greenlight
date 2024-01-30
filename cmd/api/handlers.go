@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/kvnloughead/greenlight/internals/data"
+	"github.com/kvnloughead/greenlight/internal/data"
 )
 
 // Handler fork GET /v1/healthcheck.
