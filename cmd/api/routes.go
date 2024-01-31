@@ -17,9 +17,16 @@ Set up router with httprouter. Available routes.
 	PUT     /v1/movies/:id    Update details of a specific movie
 	DELETE  /v1/movies/:id    Delete a specific movie
 	```
+
+NotFound and MethodNotAllowed errors are handled by custom error handlers
+found in api/errors.go.
 */
 func (app *application) routes() http.Handler {
 	router := httprouter.New()
+
+	// Set custom error handlers for 404 and 405 errors.
+	router.NotFound = http.HandlerFunc(app.notFoundResponse)
+	router.MethodNotAllowed = http.HandlerFunc(app.methodNotAllowedResponse)
 
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthcheck)
 	router.HandlerFunc(http.MethodPost, "/v1/movies", app.createMovie)
