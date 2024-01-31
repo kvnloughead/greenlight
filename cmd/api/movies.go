@@ -7,24 +7,6 @@ import (
 	"github.com/kvnloughead/greenlight/internal/data"
 )
 
-// Handler fork GET /v1/healthcheck.
-// Responds with info about the application, including version and the environment it is running in.
-func (app *application) healthcheck(w http.ResponseWriter, r *http.Request) {
-	env := envelope{
-		"status": "available",
-		"system_info": map[string]string{
-			"environment": app.config.env,
-			"version":     version,
-		},
-	}
-
-	err := app.writeJSON(w, http.StatusOK, env, nil)
-	if err != nil {
-		app.serverErrorResponse(w, r, http.StatusInternalServerError, err)
-		return
-	}
-}
-
 // Handler for POST /v1/movies.
 // Creates a new movie and adds it the the database.
 func (app *application) createMovie(w http.ResponseWriter, r *http.Request) {
