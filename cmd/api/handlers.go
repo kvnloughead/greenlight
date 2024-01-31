@@ -20,8 +20,7 @@ func (app *application) healthcheck(w http.ResponseWriter, r *http.Request) {
 
 	err := app.writeJSON(w, http.StatusOK, env, nil)
 	if err != nil {
-		app.logger.Error(err.Error())
-		http.Error(w, "The server couldn't process your request.", http.StatusInternalServerError)
+		app.serverErrorResponse(w, r, http.StatusInternalServerError, err)
 		return
 	}
 }
@@ -37,8 +36,7 @@ func (app *application) createMovie(w http.ResponseWriter, r *http.Request) {
 func (app *application) showMovie(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIdParam(r)
 	if err != nil {
-		http.NotFound(w, r)
-		app.logger.Error("handlers: ID must be a positive integer")
+		app.notFoundResponse(w, r)
 		return
 	}
 
@@ -53,8 +51,7 @@ func (app *application) showMovie(w http.ResponseWriter, r *http.Request) {
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"movie": movie}, nil)
 	if err != nil {
-		app.logger.Error(err.Error())
-		http.Error(w, "The server couldn't process your request.", http.StatusInternalServerError)
+		app.serverErrorResponse(w, r, http.StatusInternalServerError, err)
 		return
 	}
 }
