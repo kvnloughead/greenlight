@@ -5,7 +5,12 @@ import (
 	"net/http"
 )
 
-// Defers a function to be called in all events. If a panic occurred, the "Connection: close" header is set to close the server, and an internal server error is sent to the client.
+// recoverPanic is a middleware that catches all panics in a handler chain.
+// When a panic is caught, it is handled by
+//  1. Setting the "Connection: close" header, to instruct go to shut down the
+//     server after sending the response.
+//  2. Sending a 500 Internal Server Error response containing the error from
+//     the recovered panic.
 func (app *application) recoverPanic(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {

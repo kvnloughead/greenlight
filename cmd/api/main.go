@@ -11,13 +11,15 @@ import (
 
 const version = "1.0.0"
 
-// Struct for configuration settings, specified as CLI flags when application starts.
+// config is a struct containing configuration settings. These settings are
+// specified as CLI flags when application starts, and have defaults provided
+// in case they are omitted.
 type config struct {
 	port int
 	env  string
 }
 
-// Application struct for dependency injection.
+// application is a struct used for dependency injection.
 type application struct {
 	config config
 	logger *slog.Logger

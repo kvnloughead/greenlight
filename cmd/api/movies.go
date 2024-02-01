@@ -7,14 +7,12 @@ import (
 	"github.com/kvnloughead/greenlight/internal/data"
 )
 
-// Handler for POST /v1/movies.
-// Creates a new movie and adds it the the database.
+// createMovie handles POST requests to the /v1/movies endpoint.
 func (app *application) createMovie(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Movie created\n"))
 }
 
-// Handler for GET /v1/movies/:id.
-// Shows details for the movie with the specified ID.
+// showMovie handles GET requests to the /v1/movies/:id endpoint.
 func (app *application) showMovie(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIdParam(r)
 	if err != nil {

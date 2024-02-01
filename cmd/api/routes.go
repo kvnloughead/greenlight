@@ -6,21 +6,25 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-/*
-Set up router with httprouter. Available routes.
-
-	```
-	GET     /v1/healthcheck   Show application information
-	GET     /v1/movies        Show details of all movies
-	POST    /v1/movies        Create a new movie
-	GET     /v1/movies/:id    Show details of a specific movie
-	PUT     /v1/movies/:id    Update details of a specific movie
-	DELETE  /v1/movies/:id    Delete a specific movie
-	```
-
-NotFound and MethodNotAllowed errors are handled by custom error handlers
-found in api/errors.go.
-*/
+// routes initializes and returns an http.Handler with all the route definitions
+// for the application. It uses httprouter for routing requests to their
+// corresponding handlers based on the HTTP method and path.
+//
+// The defined routes are as follows:
+//
+//   - GET  /v1/healthcheck   Show application information.
+//   - POST /v1/movies				Create a new movie.
+//   - GET  /v1/movies/:id	  Show details of a specific movie.
+//   - PUT  /v1/movies/:id		Update details of a specific movie.
+//   - DELETE /v1/movies/:id	Delete a specific movie.
+//
+// This function also sets up custom error handling for scenarios where no
+// route is matched (404 Not Found) and when a method is not allowed for a
+// given route (405 Method Not Allowed), using the custom error handlers //
+// defined in api/errors.go.
+//
+// Finally, the router is wrapped with the recoverPanic middleware to handle any
+// panics that occur during request processing.
 func (app *application) routes() http.Handler {
 	router := httprouter.New()
 

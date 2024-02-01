@@ -9,10 +9,17 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// An envelope for wrapping responses in an outer JSON object.
+// envelope is a type used for wrapping JSON responses to ensure a consistent
+// response structure. It is a map with string keys and values of any type.
+//
+// It is commonly in handlers and middleware to wrap responses. For example,
+// error responses are typically wrapped like this:
+//
+//	envelope{"error": "detailed error message"}
 type envelope map[string]any
 
-// Reads ID param from context and parses it as an int64. If the ID doesn't parse to a positive integer, an error is returned.
+// readIdParam reads an ID param from the request context and parses it as an
+// int64. If the ID doesn't parse to a positive integer, an error is returned.
 func (app *application) readIdParam(r *http.Request) (int64, error) {
 	params := httprouter.ParamsFromContext(r.Context())
 
@@ -24,7 +31,11 @@ func (app *application) readIdParam(r *http.Request) (int64, error) {
 	return id, nil
 }
 
-// Marshals the data envelope into JSON, then prepares and sends the response. The status code is always applied, and the Content-type header is set to application/json. Additional headers can optionally be specified.
+// writeJSON marshals the data into JSON, then prepares and sends the response.
+// The response is sent with
+//
+//  1. The "Content-type: application/json" header.
+//  2. The status code that was supplied as an argument.
 //
 // Errors are simply returned to the caller.
 func (app *application) writeJSON(w http.ResponseWriter, status int, data envelope, headers http.Header) error {

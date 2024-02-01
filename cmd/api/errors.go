@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-// Logs an error message, as well as the request method and URL.
+// logError logs an error message, as well as the request method and URL.
 func (app *application) logError(r *http.Request, err error) {
 	var (
 		method = r.Method
@@ -15,9 +15,12 @@ func (app *application) logError(r *http.Request, err error) {
 	app.logger.Error(err.Error(), "method", method, "uri", uri)
 }
 
-// Helper function for sending arbitrary, JSON formatted errors to the client. Accepts a status code and a message of any type. Wraps the message in a JSON object with the key "error", and sends the result with app.writeJSON.
+// errorResponse sends arbitrary, JSON formatted errors to the client.
+// It accepts a status code and a message of any type, wrapping the message in
+// a JSON object with key "error". The result is sent using app.writeJSON.
 //
-// If an error occurs, it is logged, and a 500 status code is sent.
+// If app.writeJSON encounters an error, the function logs the error and sends
+// a blank response with a 500 status code.
 func (app *application) errorResponse(w http.ResponseWriter, r *http.Request, status int, message any) {
 	env := envelope{"error": message}
 
@@ -28,7 +31,9 @@ func (app *application) errorResponse(w http.ResponseWriter, r *http.Request, st
 	}
 }
 
-// Helper function used when an unexpected error occurs at runtime. It logs the detailed error message, and uses the errorResponse helper to send a 500 Internal Server Error with a generic error message to the client.
+// serverErrorResponse logs an unexpected error at runtime.
+// It logs the detailed error message, and uses app.errorResponse to send a 500
+// Internal Server Error with a generic error message to the client.
 func (app *application) serverErrorResponse(w http.ResponseWriter, r *http.Request, status int, err error) {
 	app.logError(r, err)
 
@@ -36,13 +41,13 @@ func (app *application) serverErrorResponse(w http.ResponseWriter, r *http.Reque
 	app.errorResponse(w, r, status, msg)
 }
 
-// Sends a 404 Not Found status code and JSON response to the client.
+// notFoundResponse sends JSON response with a 404 status code.
 func (app *application) notFoundResponse(w http.ResponseWriter, r *http.Request) {
 	msg := "the requested resource cannot be found"
 	app.errorResponse(w, r, http.StatusNotFound, msg)
 }
 
-// Sends a 405 Method Not Allowed error and a JSON response to the client.
+// methodNotAllowedResponse sends a JSON response with a 405 status code.
 func (app *application) methodNotAllowedResponse(w http.ResponseWriter, r *http.Request) {
 	msg := fmt.Sprintf("the %s method is not allowed for this resource", r.Method)
 	app.errorResponse(w, r, http.StatusMethodNotAllowed, msg)

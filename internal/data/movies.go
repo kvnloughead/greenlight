@@ -2,6 +2,7 @@ package data
 
 import "time"
 
+// Movie is a struct representing data for a single movie entry.
 type Movie struct {
 	ID        int64     `json:"id"`
 	CreatedAt time.Time `json:"-"`
