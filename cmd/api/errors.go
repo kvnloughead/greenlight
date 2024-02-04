@@ -52,3 +52,9 @@ func (app *application) methodNotAllowedResponse(w http.ResponseWriter, r *http.
 	msg := fmt.Sprintf("the %s method is not allowed for this resource", r.Method)
 	app.errorResponse(w, r, http.StatusMethodNotAllowed, msg)
 }
+
+// badRequestResponse sends a JSON response with a 400 status code. It excepts
+// an error argument and includes it in the response.
+func (app *application) badRequestResponse(w http.ResponseWriter, r *http.Request, err error) {
+	app.errorResponse(w, r, http.StatusBadRequest, err.Error())
+}
