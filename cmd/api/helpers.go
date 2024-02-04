@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -55,5 +57,62 @@ func (app *application) writeJSON(w http.ResponseWriter, status int, data envelo
 	w.WriteHeader(status)
 	w.Write(append(js, '\n'))
 
+	return nil
+}
+
+// readJSON decodes a requests body to the target destination. The destination
+// argument must be a non-nil pointer. The following errors are caught and
+// responded to specifically.
+//
+//  1. In most cases, general syntax errors will result in a json.SyntaxError.
+//     In this case, we return a message with the offset of the error.
+//
+//  2. In some cases, syntax errors will result in an io.ErrUnexpectedEOF. Here,
+//     we return a message with no offset. See the open issue for details
+//     https://github.com/golang/go/issues/25956
+//
+//  3. If the request includes data of an incorrect type, this results in a
+//     *json.UnmarshalTypeError. In these cases we return a message indicating
+//     the offending field, if possible. Otherwise, a generic message.
+//
+//  4. An empty body results in an io.EOF error, which are caught and responded
+//     to appropriately.
+//
+//  5. If dst is anything by a non-nil pointer, then json.Decode returns a
+//     json.InvalidUnmarshalError. In this case, we panic, rather than returning
+//     an error to the handler, because to do otherwise would require excessive
+//     error handling in all of our handlers.
+//
+// All other errors are returned as-is.
+func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any) error {
+	err := json.NewDecoder(r.Body).Decode(dst)
+	if err != nil {
+		var syntaxError *json.SyntaxError
+		var unmarshallTypeError *json.UnmarshalTypeError
+		var invalidUnmarshalError *json.InvalidUnmarshalError
+
+		switch {
+		case errors.As(err, &syntaxError):
+			return fmt.Errorf("body contains badly-formed JSON (at character %d)", syntaxError.Offset)
+
+		case errors.Is(err, io.ErrUnexpectedEOF):
+			return errors.New("body contains badly-formed JSON")
+
+		case errors.As(err, &unmarshallTypeError):
+			if unmarshallTypeError.Field != "" {
+				return fmt.Errorf("body contains JSON of incorrect type for field %q", unmarshallTypeError.Field)
+			}
+			return fmt.Errorf("body contains JSON of an incorrect type (at character %d)", unmarshallTypeError.Offset)
+
+		case errors.Is(err, io.EOF):
+			return errors.New("request body must not be empty")
+
+		case errors.As(err, &invalidUnmarshalError):
+			panic(err)
+
+		default:
+			return err
+		}
+	}
 	return nil
 }
