@@ -53,8 +53,14 @@ func (app *application) methodNotAllowedResponse(w http.ResponseWriter, r *http.
 	app.errorResponse(w, r, http.StatusMethodNotAllowed, msg)
 }
 
-// badRequestResponse sends a JSON response with a 400 status code. It excepts
+// badRequestResponse sends a JSON response with a 400 status code. It accepts
 // an error argument and includes it in the response.
 func (app *application) badRequestResponse(w http.ResponseWriter, r *http.Request, err error) {
 	app.errorResponse(w, r, http.StatusBadRequest, err.Error())
+}
+
+// failedValidationResponse sends a JSON response with a 422 status code. It
+// accepts a map of errors and their messages and sends them in the response.
+func (app *application) failedValidationResponse(w http.ResponseWriter, r *http.Request, errors map[string]string) {
+	app.errorResponse(w, r, http.StatusUnprocessableEntity, errors)
 }
