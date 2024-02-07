@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
+	"database/sql"
 	"flag"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"time"
+
+	_ "github.com/lib/pq"
 )
 
 const version = "1.0.0"
@@ -17,6 +21,9 @@ const version = "1.0.0"
 type config struct {
 	port int
 	env  string
+	db   struct {
+		dsn string
+	}
 }
 
 // application is a struct used for dependency injection.
@@ -28,10 +35,27 @@ type application struct {
 func main() {
 	var cfg config
 	flag.IntVar(&cfg.port, "port", 4000, "The API's HTTP port.")
-	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
+	flag.StringVar(&cfg.env,
+		"env",
+		"development",
+		"Environment (development|staging|production)")
+	flag.StringVar(&cfg.db.dsn,
+		"db-dsn",
+		os.Getenv("GREENLIGHT_DB_DSN"),
+		"Postgresql DSN")
 	flag.Parse()
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+
+	db, err := openDB(cfg)
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+
+	defer db.Close()
+
+	logger.Info("database connection pool established")
 
 	app := application{
 		config: cfg,
@@ -49,7 +73,29 @@ func main() {
 
 	logger.Info("Starting server", "port", cfg.port, "env", cfg.env)
 
-	err := srv.ListenAndServe()
+	err = srv.ListenAndServe()
 	logger.Error(err.Error())
 	os.Exit(1)
+}
+
+// openDB creates an sql.DB connection pool for the supplied DSN and returns it.
+// If a connection can't be established within 5 seconds, an error is returned.
+func openDB(cfg config) (*sql.DB, error) {
+	db, err := sql.Open("postgres", cfg.db.dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a context with an empty parent context and a 5s timeout deadline.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Attempt to connect to the database within the 5s lifetime of the context.
+	err = db.PingContext(ctx)
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+
+	return db, nil
 }
