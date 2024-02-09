@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/kvnloughead/greenlight/internal/data"
 	_ "github.com/lib/pq"
 )
 
@@ -33,9 +34,11 @@ type config struct {
 type application struct {
 	config config
 	logger *slog.Logger
+	models data.Models
 }
 
 func main() {
+	// Parse CLI flags into config struct (to be added to dependencies).
 	var cfg config
 	flag.IntVar(&cfg.port, "port", 4000, "The API's HTTP port.")
 	flag.StringVar(&cfg.env,
@@ -51,21 +54,22 @@ func main() {
 	flag.DurationVar(&cfg.db.maxIdleTime, "db-max-idle-time", 15*time.Minute, "Postgresql max connection idle time")
 	flag.Parse()
 
+	// Create structured logger (to be added to dependencies).
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
+	// Open database connection.
 	db, err := openDB(cfg)
 	if err != nil {
 		logger.Error(err.Error())
 		os.Exit(1)
 	}
-
 	defer db.Close()
-
 	logger.Info("database connection pool established")
 
 	app := application{
 		config: cfg,
 		logger: logger,
+		models: data.NewModels(db),
 	}
 
 	srv := &http.Server{

@@ -1,6 +1,7 @@
 package data
 
 import (
+	"database/sql"
 	"time"
 
 	validator "github.com/kvnloughead/greenlight/internal"
@@ -15,6 +16,32 @@ type Movie struct {
 	Runtime   Runtime   `json:"runtime,omitempty"`
 	Genres    []string  `json:"genres,omitempty"`
 	Version   int32     `json:"version"`
+}
+
+// MovieModel struct wraps an sql.DB connection pool and implements
+// basic CRUD operations.
+type MovieModel struct {
+	DB *sql.DB
+}
+
+// Insert adds a movie to the database.
+func (m MovieModel) Insert(movie *Movie) error {
+	return nil
+}
+
+// Get retrieves a a specific record in the movies table by its ID.
+func (m MovieModel) Get(id int64) (*Movie, error) {
+	return nil, nil
+}
+
+// Update updates a specific record in the movies table.
+func (m MovieModel) Update(movie *Movie) error {
+	return nil
+}
+
+// Delete deletes a specific record from the movies table.
+func (m MovieModel) Delete(id int64) error {
+	return nil
 }
 
 // ValidateMovie validates the fields of a Movie struct. The fields must meet
