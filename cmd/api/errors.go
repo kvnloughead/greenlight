@@ -34,11 +34,11 @@ func (app *application) errorResponse(w http.ResponseWriter, r *http.Request, st
 // serverErrorResponse logs an unexpected error at runtime.
 // It logs the detailed error message, and uses app.errorResponse to send a 500
 // Internal Server Error with a generic error message to the client.
-func (app *application) serverErrorResponse(w http.ResponseWriter, r *http.Request, status int, err error) {
+func (app *application) serverErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
 	app.logError(r, err)
 
 	msg := "the server encountered a problem and couldn't process your request"
-	app.errorResponse(w, r, status, msg)
+	app.errorResponse(w, r, http.StatusInternalServerError, msg)
 }
 
 // notFoundResponse sends JSON response with a 404 status code.

@@ -68,7 +68,7 @@ func (app *application) showMovie(w http.ResponseWriter, r *http.Request) {
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"movie": movie}, nil)
 	if err != nil {
-		app.serverErrorResponse(w, r, http.StatusInternalServerError, err)
+		app.serverErrorResponse(w, r, err)
 		return
 	}
 }
