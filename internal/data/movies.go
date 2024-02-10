@@ -2,6 +2,7 @@ package data
 
 import (
 	"database/sql"
+	"errors"
 	"time"
 
 	validator "github.com/kvnloughead/greenlight/internal"
@@ -47,9 +48,41 @@ func (m MovieModel) Insert(movie *Movie) error {
 		&movie.ID, &movie.CreatedAt, &movie.Version)
 }
 
-// Get retrieves a a specific record in the movies table by its ID.
+// Get retrieves a a specific record in the movies table by its ID. If the ID
+// argument is less then 1, or if there is no movie with a matching ID in the
+// database, and ErrRecordNotFound is returned. If a movie is found, a pointer
+// to the corresponding Movie struct is returned.
 func (m MovieModel) Get(id int64) (*Movie, error) {
-	return nil, nil
+	if id < 1 {
+		return nil, ErrRecordNotFound
+	}
+
+	query := `
+		SELECT id, created_at, title, year, runtime, genres, version
+		FROM movies WHERE ID = $1`
+
+	var movie Movie
+
+	err := m.DB.QueryRow(query, id).Scan(
+		&movie.ID,
+		&movie.CreatedAt,
+		&movie.Title,
+		&movie.Year,
+		&movie.Runtime,
+		pq.Array(&movie.Genres),
+		&movie.Version,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &movie, nil
 }
 
 // Update updates a specific record in the movies table.
