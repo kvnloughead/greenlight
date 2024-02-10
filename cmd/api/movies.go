@@ -31,7 +31,7 @@ func (app *application) createMovie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	m := &data.Movie{
+	movie := &data.Movie{
 		Title:   input.Title,
 		Year:    input.Year,
 		Runtime: input.Runtime,
@@ -39,14 +39,28 @@ func (app *application) createMovie(w http.ResponseWriter, r *http.Request) {
 	}
 
 	v := validator.New()
-	data.ValidateMovie(v, m)
+	data.ValidateMovie(v, movie)
 
 	if !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
 
-	fmt.Fprintf(w, "%+v\n", input)
+	err = app.models.Movies.Insert(movie)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	// Specify the API location of the created resource.
+	headers := make(http.Header)
+	headers.Set("Location", fmt.Sprintf("/v1/movies/%d", movie.ID))
+
+	err = app.writeJSON(w, http.StatusCreated, envelope{"data": movie}, headers)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
 }
 
 // showMovie handles GET requests to the /v1/movies/:id endpoint.

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	validator "github.com/kvnloughead/greenlight/internal"
+	"github.com/lib/pq"
 )
 
 // Movie is a struct representing data for a single movie entry.
@@ -24,9 +25,26 @@ type MovieModel struct {
 	DB *sql.DB
 }
 
-// Insert adds a movie to the database.
+// Insert adds a new record to the movie table. It accepts a pointer to a
+// Movie struct and runs an INSERT query. The id, created_at, and version fields
+// are generated automatically.
 func (m MovieModel) Insert(movie *Movie) error {
-	return nil
+	// The query returns the system-generated id, created_at, and version fields
+	// so that we can assign them to the movie struct argument.
+	query := `
+		INSERT INTO movies (title, year, runtime, genres)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id, created_at, version`
+
+	// The args slice contains the fields provided in the movie struct arguement.
+	// Note that we are converting the string slice movie.Genres to an array the
+	// is compatible with the genres field's text[] type.
+	args := []any{movie.Title, movie.Year, movie.Runtime, pq.Array(movie.Genres)}
+
+	// QueryRow executes the query, passing the fields from args as placeholders.
+	// The system-generated values are then scanned into the movie struct.
+	return m.DB.QueryRow(query, args...).Scan(
+		&movie.ID, &movie.CreatedAt, &movie.Version)
 }
 
 // Get retrieves a a specific record in the movies table by its ID.
