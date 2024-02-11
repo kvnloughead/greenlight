@@ -85,9 +85,27 @@ func (m MovieModel) Get(id int64) (*Movie, error) {
 	return &movie, nil
 }
 
-// Update updates a specific record in the movies table.
+// Update updates a specific record in the movies table. All fields must be
+// provided by the caller, not only the fields to be changed. The record's
+// version field is incremented by 1.
+//
+// Returns a sql.ErrNoRows error if no mathing record was found.
 func (m MovieModel) Update(movie *Movie) error {
-	return nil
+	query := `
+		UPDATE movies
+		SET title = $1, year = $2, runtime = $3, genres = $4, version = version + 1
+		WHERE id = $5
+		RETURNING version`
+
+	args := []any{
+		movie.Title,
+		movie.Year,
+		movie.Runtime,
+		pq.Array(movie.Genres),
+		movie.ID,
+	}
+
+	return m.DB.QueryRow(query, args...).Scan(&movie.Version)
 }
 
 // Delete deletes a specific record from the movies table.
