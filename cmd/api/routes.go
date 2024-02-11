@@ -12,11 +12,11 @@ import (
 //
 // The defined routes are as follows:
 //
-//   - GET  /v1/healthcheck   Show application information.
-//   - POST /v1/movies				Create a new movie.
-//   - GET  /v1/movies/:id	  Show details of a specific movie.
-//   - PUT  /v1/movies/:id		Update details of a specific movie.
-//   - DELETE /v1/movies/:id	Delete a specific movie.
+//   - GET    /v1/healthcheck   Show application information.
+//   - POST   /v1/movies				Create a new movie.
+//   - GET    /v1/movies/:id	  Show details of a specific movie.
+//   - PATCH  /v1/movies/:id		Update details of a specific movie.
+//   - DELETE /v1/movies/:id	  Delete a specific movie.
 //
 // This function also sets up custom error handling for scenarios where no
 // route is matched (404 Not Found) and when a method is not allowed for a
@@ -35,7 +35,7 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthcheck)
 	router.HandlerFunc(http.MethodPost, "/v1/movies", app.createMovie)
 	router.HandlerFunc(http.MethodGet, "/v1/movies/:id", app.showMovie)
-	router.HandlerFunc(http.MethodPut, "/v1/movies/:id", app.updateMovie)
+	router.HandlerFunc(http.MethodPatch, "/v1/movies/:id", app.updateMovie)
 	router.HandlerFunc(http.MethodDelete, "/v1/movies/:id", app.deleteMovie)
 
 	return app.recoverPanic(router)

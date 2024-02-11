@@ -89,6 +89,12 @@ func (app *application) showMovie(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// updateMovie handles PATCH requests to the /v1/movies/:id endpoint. It's body
+// should contain one or more movie fields to be modified. Partial updates are
+// supported.
+//
+// If fields are omitted in the request body, or if they are given a null value
+// they will be unchanged.
 func (app *application) updateMovie(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIdParam(r)
 	if err != nil {
@@ -108,12 +114,14 @@ func (app *application) updateMovie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// input is a struct to store the JSON values from the request body.
+	// input is a struct to store the JSON values from the request body. We use
+	// pointers to facilitate partial updates. If a value is not provided, the
+	// pointer will be nil, and we can leave the corresponding field unchanged.
 	var input struct {
-		Title   string       `json:"title"`
-		Year    int32        `json:"year"`
-		Runtime data.Runtime `json:"runtime"`
-		Genres  []string     `json:"genres"`
+		Title   *string       `json:"title"`
+		Year    *int32        `json:"year"`
+		Runtime *data.Runtime `json:"runtime"`
+		Genres  []string      `json:"genres"`
 	}
 
 	// Read JSON from request body into the input struct.
@@ -123,11 +131,19 @@ func (app *application) updateMovie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update the movie argument's fields with those supplied in the request body.
-	movie.Title = input.Title
-	movie.Year = input.Year
-	movie.Runtime = input.Runtime
-	movie.Genres = input.Genres
+	// If the input field isn't nil, update the corresponding field in the record.
+	if input.Title != nil {
+		movie.Title = *input.Title
+	}
+	if input.Year != nil {
+		movie.Year = *input.Year
+	}
+	if input.Runtime != nil {
+		movie.Runtime = *input.Runtime
+	}
+	if input.Genres != nil {
+		movie.Genres = input.Genres
+	}
 
 	// Validate the updated movie record, or return a 422 response.
 	v := validator.New()
