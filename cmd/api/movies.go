@@ -90,7 +90,6 @@ func (app *application) showMovie(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) updateMovie(w http.ResponseWriter, r *http.Request) {
-	// Extract ID from URL.
 	id, err := app.readIdParam(r)
 	if err != nil {
 		app.notFoundResponse(w, r)
@@ -150,5 +149,30 @@ func (app *application) updateMovie(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
+	}
+}
+
+func (app *application) deleteMovie(w http.ResponseWriter, r *http.Request) {
+	id, err := app.readIdParam(r)
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	// Delete record or send an error response.
+	err = app.models.Movies.Delete(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "movie successful deleted"}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
 	}
 }
