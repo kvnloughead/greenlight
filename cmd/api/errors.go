@@ -64,3 +64,10 @@ func (app *application) badRequestResponse(w http.ResponseWriter, r *http.Reques
 func (app *application) failedValidationResponse(w http.ResponseWriter, r *http.Request, errors map[string]string) {
 	app.errorResponse(w, r, http.StatusUnprocessableEntity, errors)
 }
+
+// editConflictResponse sends a JSON response with a 409 status code and a
+// message that indicates a conflict while attempting to edit a resource.
+func (app *application) editConflictResponse(w http.ResponseWriter, r *http.Request) {
+	msg := "unable to update the record due to an edit conflict, please try again"
+	app.errorResponse(w, r, http.StatusConflict, msg)
+}

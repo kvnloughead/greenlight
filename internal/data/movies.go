@@ -85,16 +85,18 @@ func (m MovieModel) Get(id int64) (*Movie, error) {
 	return &movie, nil
 }
 
-// Update updates a specific record in the movies table. All fields must be
-// provided by the caller, not only the fields to be changed. The record's
-// version field is incremented by 1.
+// Update updates a specific record in the movies table. The caller should
+// check for the existence of the record to be updated before calling Update.
+// The record's version field is incremented by 1 after update.
 //
-// Returns a sql.ErrNoRows error if no mathing record was found.
+// Prevents edit conflicts by verifying that the version of the record in the
+// UPDATE query is the same as the version of the movie argument. In case of
+// an edit conflict, an ErrEditConflict error is returned.
 func (m MovieModel) Update(movie *Movie) error {
 	query := `
 		UPDATE movies
 		SET title = $1, year = $2, runtime = $3, genres = $4, version = version + 1
-		WHERE id = $5
+		WHERE id = $5 AND version = $6
 		RETURNING version`
 
 	args := []any{
@@ -103,9 +105,22 @@ func (m MovieModel) Update(movie *Movie) error {
 		movie.Runtime,
 		pq.Array(movie.Genres),
 		movie.ID,
+		movie.Version,
 	}
 
-	return m.DB.QueryRow(query, args...).Scan(&movie.Version)
+	err := m.DB.QueryRow(query, args...).Scan(&movie.Version)
+	if err != nil {
+		switch {
+		// An sql.ErrNoRows is returned if there are no matching records. Since we
+		// know that the record exists already, this can be assumed to be due to a
+		// version mismatch (hence an edit conflict).
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrEditConflict
+		default:
+			return err
+		}
+	}
+	return nil
 }
 
 // Delete deletes a specific record from the movies table. Returns an
