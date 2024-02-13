@@ -9,6 +9,37 @@ import (
 	"github.com/kvnloughead/greenlight/internal/data"
 )
 
+// listMovies handles GET requests to the /v1/movies endpoint.
+func (app *application) listMovies(w http.ResponseWriter, r *http.Request) {
+	// input is an anonymous struct intended to store the query params for
+	// filtering, sorting, and pagination.
+	var input struct {
+		Title    string
+		Genres   []string
+		Page     int
+		PageSize int
+		Sort     string
+	}
+
+	v := validator.New()
+	qs := r.URL.Query()
+
+	// Read query params into the input struct, setting reasonable defaults if
+	// any are omitted, and validating the values that should be integers.
+	input.Title = app.readQueryString(qs, "title", "")
+	input.Genres = app.readQueryCSV(qs, "genres", []string{})
+	input.Page = app.readQueryInt(qs, "page", 1, v)
+	input.PageSize = app.readQueryInt(qs, "page_size", 20, v)
+	input.Sort = app.readQueryString(qs, "sort", "id")
+
+	if !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	fmt.Printf("%+v\n", input)
+}
+
 // createMovie handles POST requests to the /v1/movies endpoint. The request
 // body is decoded by the app.readJSON helper. See that function for details
 // about error handling.

@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
 	"github.com/julienschmidt/httprouter"
+	validator "github.com/kvnloughead/greenlight/internal"
 )
 
 // envelope is a type used for wrapping JSON responses to ensure a consistent
@@ -147,4 +149,45 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any
 	}
 
 	return nil
+}
+
+// readQueryString returns the value of the key in the provided query string
+// map. If the value is an empty string, the default value is returned instead.
+func (app *application) readQueryString(qs url.Values, key string, defaultValue string) string {
+	s := qs.Get(key)
+	if s == "" {
+		return defaultValue
+	}
+	return s
+}
+
+// readQueryCSV reads a CSV field from the query string argument. The CSV
+// string is then split into a slice of strings and returned. If the field
+// is empty, the default value is returned.
+func (app *application) readQueryCSV(qs url.Values, key string, defaultValue []string) []string {
+	s := qs.Get(key)
+	if s == "" {
+		return defaultValue
+	}
+	return strings.Split(s, ",")
+}
+
+// readQueryInt reads an integer valued field from the query string argument.
+// If the field is empty, the default value is returned. If the field can't be
+// converted to an integer, the default value is returned, and an error is
+// added to the validator instance.
+func (app *application) readQueryInt(qs url.Values, key string, defaultValue int, v *validator.Validator) int {
+	s := qs.Get(key)
+
+	if s == "" {
+		return defaultValue
+	}
+
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		v.AddError(key, "must be an integer value")
+		return defaultValue
+	}
+
+	return i
 }

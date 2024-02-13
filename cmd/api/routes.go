@@ -13,6 +13,7 @@ import (
 // The defined routes are as follows:
 //
 //   - GET    /v1/healthcheck   Show application information.
+//   - GET    /v1/movies				Show details of all movies (or a subset)
 //   - POST   /v1/movies				Create a new movie.
 //   - GET    /v1/movies/:id	  Show details of a specific movie.
 //   - PATCH  /v1/movies/:id		Update details of a specific movie.
@@ -33,6 +34,7 @@ func (app *application) routes() http.Handler {
 	router.MethodNotAllowed = http.HandlerFunc(app.methodNotAllowedResponse)
 
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthcheck)
+	router.HandlerFunc(http.MethodGet, "/v1/movies", app.listMovies)
 	router.HandlerFunc(http.MethodPost, "/v1/movies", app.createMovie)
 	router.HandlerFunc(http.MethodGet, "/v1/movies/:id", app.showMovie)
 	router.HandlerFunc(http.MethodPatch, "/v1/movies/:id", app.updateMovie)
