@@ -14,11 +14,9 @@ func (app *application) listMovies(w http.ResponseWriter, r *http.Request) {
 	// input is an anonymous struct intended to store the query params for
 	// filtering, sorting, and pagination.
 	var input struct {
-		Title    string
-		Genres   []string
-		Page     int
-		PageSize int
-		Sort     string
+		Title  string
+		Genres []string
+		data.Filters
 	}
 
 	v := validator.New()
@@ -28,9 +26,9 @@ func (app *application) listMovies(w http.ResponseWriter, r *http.Request) {
 	// any are omitted, and validating the values that should be integers.
 	input.Title = app.readQueryString(qs, "title", "")
 	input.Genres = app.readQueryCSV(qs, "genres", []string{})
-	input.Page = app.readQueryInt(qs, "page", 1, v)
-	input.PageSize = app.readQueryInt(qs, "page_size", 20, v)
-	input.Sort = app.readQueryString(qs, "sort", "id")
+	input.Filters.Page = app.readQueryInt(qs, "page", 1, v)
+	input.Filters.PageSize = app.readQueryInt(qs, "page_size", 20, v)
+	input.Filters.Sort = app.readQueryString(qs, "sort", "id")
 
 	if !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
