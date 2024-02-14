@@ -39,6 +39,53 @@ func createTimeoutContext(timeout time.Duration) (context.Context, context.Cance
 	return ctx, cancel
 }
 
+// GetAll retrieves a slice of movies from the database. The slice can be
+// filtered and sorted via several query parameters.
+func (m MovieModel) GetAll() ([]*Movie, error) {
+	query := `
+		SELECT id, created_at, title, year, runtime, genres, version
+		FROM movies
+		ORDER BY id`
+
+	ctx, cancel := createTimeoutContext(queryTimeout)
+	defer cancel()
+
+	// Retrieve matching rows from database.
+	rows, err := m.DB.QueryContext(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close() // Defer closing after handling errors.
+
+	movies := []*Movie{}
+
+	// Iterate through rows, reading each record in an entry in a Movie slice.
+	for rows.Next() {
+		var m Movie
+		err = rows.Scan(
+			&m.ID,
+			&m.CreatedAt,
+			&m.Title,
+			&m.Year,
+			&m.Runtime,
+			pq.Array(&m.Genres),
+			&m.Version,
+		)
+		if err != nil {
+			return nil, err
+		}
+		movies = append(movies, &m)
+	}
+
+	// rows.Err() will contain any errors that occurred during iteration.
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return movies, nil
+}
+
 // Insert adds a new record to the movie table. It accepts a pointer to a
 // Movie struct and runs an INSERT query. The id, created_at, and version fields
 // are generated automatically.

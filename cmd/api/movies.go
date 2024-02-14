@@ -42,7 +42,17 @@ func (app *application) listMovies(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("%+v\n", input)
+	movies, err := app.models.Movies.GetAll()
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"movie": movies}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
 }
 
 // createMovie handles POST requests to the /v1/movies endpoint. The request
