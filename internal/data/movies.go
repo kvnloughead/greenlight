@@ -40,18 +40,26 @@ func createTimeoutContext(timeout time.Duration) (context.Context, context.Cance
 }
 
 // GetAll retrieves a slice of movies from the database. The slice can be
-// filtered and sorted via several query parameters.
-func (m MovieModel) GetAll() ([]*Movie, error) {
+// filtered and sorted via several optional query parameters.
+//
+//   - title: if provided, only exact matches will be included.
+//   - genres: if provided, only movies that have each of the provided genres
+//     are included.
+//   - sort: the key to sort by. Prepend with '-' for descending order. Defaults
+//     to ID, ascending.
+func (m MovieModel) GetAll(title string, genres []string, filters Filters) ([]*Movie, error) {
 	query := `
 		SELECT id, created_at, title, year, runtime, genres, version
 		FROM movies
+		WHERE (LOWER(title) = LOWER($1) OR $1 = '')
+		AND (genres @> $2 OR $2 = '{}')
 		ORDER BY id`
 
 	ctx, cancel := createTimeoutContext(queryTimeout)
 	defer cancel()
 
 	// Retrieve matching rows from database.
-	rows, err := m.DB.QueryContext(ctx, query)
+	rows, err := m.DB.QueryContext(ctx, query, title, pq.Array(genres))
 	if err != nil {
 		return nil, err
 	}
