@@ -34,6 +34,18 @@ func (f *Filters) sortDirection() string {
 	}
 }
 
+// limit returns the max number of items in a page, as specified by the
+// `page_size` query parameter.
+func (f *Filters) limit() int {
+	return f.PageSize
+}
+
+// offset returns the number of rows to skip when display paginated data beyond
+// page 1. Calculated from query parameters as (page - 1) * page_size.
+func (f *Filters) offset() int {
+	return (f.Page - 1) * f.PageSize
+}
+
 func ValidateFilters(v *validator.Validator, f Filters) {
 
 	v.Check(f.Page >= 1, "page", "must be at least 1")
