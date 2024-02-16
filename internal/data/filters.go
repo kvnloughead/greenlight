@@ -1,6 +1,8 @@
 package data
 
 import (
+	"strings"
+
 	validator "github.com/kvnloughead/greenlight/internal"
 )
 
@@ -9,6 +11,27 @@ type Filters struct {
 	PageSize     int
 	Sort         string
 	SortSafelist []string
+}
+
+// sortColumn returns the column to sort by from the filter's Sort field.
+// It panics if the sort key is not in the safelist.
+func (f *Filters) sortColumn() string {
+	for _, safeValue := range f.SortSafelist {
+		if f.Sort == safeValue {
+			return strings.Trim(f.Sort, "-")
+		}
+	}
+	panic("unsafe sort parameter: " + f.Sort)
+}
+
+// sortDirection returns the direction in which the sort should occur.
+// Possible return values: "ASC" and "DESC".
+func (f *Filters) sortDirection() string {
+	if strings.HasPrefix(f.Sort, "-") {
+		return "DESC"
+	} else {
+		return "ASC"
+	}
 }
 
 func ValidateFilters(v *validator.Validator, f Filters) {

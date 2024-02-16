@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	validator "github.com/kvnloughead/greenlight/internal"
@@ -48,13 +49,13 @@ func createTimeoutContext(timeout time.Duration) (context.Context, context.Cance
 //   - sort: the key to sort by. Prepend with '-' for descending order. Defaults
 //     to ID, ascending.
 func (m MovieModel) GetAll(title string, genres []string, filters Filters) ([]*Movie, error) {
-	query := `
+	query := fmt.Sprintf(`
 		SELECT id, created_at, title, year, runtime, genres, version
 		FROM movies
 		WHERE (to_tsvector('english', title)
 					 @@ plainto_tsquery('english', $1) OR $1 = '')
 		AND (genres @> $2 OR $2 = '{}')
-		ORDER BY id`
+		ORDER BY %s %s, id ASC`, filters.sortColumn(), filters.sortDirection())
 
 	ctx, cancel := createTimeoutContext(queryTimeout)
 	defer cancel()
