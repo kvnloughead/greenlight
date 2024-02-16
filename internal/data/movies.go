@@ -42,7 +42,7 @@ func createTimeoutContext(timeout time.Duration) (context.Context, context.Cance
 // GetAll retrieves a slice of movies from the database. The slice can be
 // filtered and sorted via several optional query parameters.
 //
-//   - title: if provided, only exact matches will be included.
+//   - title: if provided, fuzzy matches on the movie's title.
 //   - genres: if provided, only movies that have each of the provided genres
 //     are included.
 //   - sort: the key to sort by. Prepend with '-' for descending order. Defaults
