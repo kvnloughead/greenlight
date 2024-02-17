@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"net/http"
+
+	"golang.org/x/time/rate"
 )
 
 // recoverPanic is a middleware that catches all panics in a handler chain.
@@ -23,5 +25,24 @@ func (app *application) recoverPanic(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
 
+// rateLimit is a middleware that limits the number of requests to an average of
+// 2 per second, with bursts of up to 4 seconds.
+//
+// If the limit is exceeded, a 429 Too Many Request response is sent to the
+// client.
+func (app *application) rateLimit(next http.Handler) http.Handler {
+	limiter := rate.NewLimiter(2, 4)
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if !limiter.Allow() {
+				app.rateLimitExceededReponse(w, r)
+				return
+			}
+		}()
+
+		next.ServeHTTP(w, r)
+	})
 }

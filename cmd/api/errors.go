@@ -71,3 +71,10 @@ func (app *application) editConflictResponse(w http.ResponseWriter, r *http.Requ
 	msg := "unable to update the record due to an edit conflict, please try again"
 	app.errorResponse(w, r, http.StatusConflict, msg)
 }
+
+// rateLimitExceededReponse sends a JSON response with a 429 status code and a
+// message that indicates that the rate limit has been exceeded.
+func (app *application) rateLimitExceededReponse(w http.ResponseWriter, r *http.Request) {
+	msg := "rate limit exceeded"
+	app.errorResponse(w, r, http.StatusTooManyRequests, msg)
+}
