@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"net/http"
+	"sync"
+	"time"
 
 	"golang.org/x/time/rate"
 )
@@ -33,15 +36,61 @@ func (app *application) recoverPanic(next http.Handler) http.Handler {
 // If the limit is exceeded, a 429 Too Many Request response is sent to the
 // client.
 func (app *application) rateLimit(next http.Handler) http.Handler {
-	limiter := rate.NewLimiter(2, 4)
+	// Struct client contains data corresponding to a client IP. It has a rate
+	// limiter property, and a lastSeen property used to remove unused clients
+	// from the clients map.
+	type client struct {
+		limiter  *rate.Limiter
+		lastSeen time.Time
+	}
+
+	var (
+		mu      sync.Mutex
+		clients = make(map[string]*client)
+	)
+
+	// Start background goroutine to remove old entries from the clients map.
+	go func() {
+		for {
+			time.Sleep(time.Minute)
+
+			mu.Lock()
+			for ip, client := range clients {
+				if time.Since(client.lastSeen) > 3*time.Minute {
+					delete(clients, ip)
+				}
+			}
+
+			mu.Unlock()
+		}
+	}()
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer func() {
-			if !limiter.Allow() {
-				app.rateLimitExceededReponse(w, r)
-				return
-			}
-		}()
+		ip, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil {
+			app.serverErrorResponse(w, r, err)
+			return
+		}
+
+		mu.Lock()
+
+		// If no limiter exists for current IP, add it to the map of clients.
+		if _, ok := clients[ip]; !ok {
+			limiter := rate.NewLimiter(2, 4)
+			clients[ip] = &client{limiter: limiter}
+		}
+
+		clients[ip].lastSeen = time.Now()
+
+		if !clients[ip].limiter.Allow() {
+			mu.Unlock()
+			app.rateLimitExceededReponse(w, r)
+			return
+		}
+
+		// We can't defer unlocking this mutext, because it wouldn't occur until all
+		// downstream handlers have retured.
+		mu.Unlock()
 
 		next.ServeHTTP(w, r)
 	})
