@@ -66,31 +66,37 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 	}()
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ip, _, err := net.SplitHostPort(r.RemoteAddr)
-		if err != nil {
-			app.serverErrorResponse(w, r, err)
-			return
-		}
+		if app.config.limiter.enabled {
 
-		mu.Lock()
+			ip, _, err := net.SplitHostPort(r.RemoteAddr)
+			if err != nil {
+				app.serverErrorResponse(w, r, err)
+				return
+			}
 
-		// If no limiter exists for current IP, add it to the map of clients.
-		if _, ok := clients[ip]; !ok {
-			limiter := rate.NewLimiter(2, 4)
-			clients[ip] = &client{limiter: limiter}
-		}
+			mu.Lock()
 
-		clients[ip].lastSeen = time.Now()
+			// If no limiter exists for current IP, add it to the map of clients.
+			if _, ok := clients[ip]; !ok {
+				limiter := rate.NewLimiter(
+					rate.Limit(app.config.limiter.rps),
+					app.config.limiter.burst,
+				)
+				clients[ip] = &client{limiter: limiter}
+			}
 
-		if !clients[ip].limiter.Allow() {
+			clients[ip].lastSeen = time.Now()
+
+			if !clients[ip].limiter.Allow() {
+				mu.Unlock()
+				app.rateLimitExceededReponse(w, r)
+				return
+			}
+
+			// We can't defer unlocking this mutext, because it wouldn't occur until all
+			// downstream handlers have retured.
 			mu.Unlock()
-			app.rateLimitExceededReponse(w, r)
-			return
 		}
-
-		// We can't defer unlocking this mutext, because it wouldn't occur until all
-		// downstream handlers have retured.
-		mu.Unlock()
 
 		next.ServeHTTP(w, r)
 	})

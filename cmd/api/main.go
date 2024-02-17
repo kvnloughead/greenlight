@@ -28,6 +28,13 @@ type config struct {
 		maxIdleConns int
 		maxIdleTime  time.Duration
 	}
+
+	// limiter is a struct container configuration settings for our rate limiter.
+	limiter struct {
+		rps     float64 // Requests per second. Defaults to 2.
+		burst   int     // Max request in burst. Defaults to 4.
+		enabled bool    // Defaults to true.
+	}
 }
 
 // application is a struct used for dependency injection.
@@ -40,11 +47,13 @@ type application struct {
 func main() {
 	// Parse CLI flags into config struct (to be added to dependencies).
 	var cfg config
+
 	flag.IntVar(&cfg.port, "port", 4000, "The API's HTTP port.")
 	flag.StringVar(&cfg.env,
 		"env",
 		"development",
 		"Environment (development|staging|production)")
+
 	flag.StringVar(&cfg.db.dsn,
 		"db-dsn",
 		os.Getenv("GREENLIGHT_DB_DSN"),
@@ -52,6 +61,11 @@ func main() {
 	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "Postgresql max open connections")
 	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "Postgresql max idle connections")
 	flag.DurationVar(&cfg.db.maxIdleTime, "db-max-idle-time", 15*time.Minute, "Postgresql max connection idle time")
+
+	flag.Float64Var(&cfg.limiter.rps, "limiter-rps", 2, "Rate limiter maximum requests per second per IP")
+	flag.IntVar(&cfg.limiter.burst, "limiter-burst", 4, "Rate limiter max requests in a burst")
+	flag.BoolVar(&cfg.limiter.enabled, "limiter-enabled", true, "Enable rate limiter")
+
 	flag.Parse()
 
 	// Create structured logger (to be added to dependencies).
