@@ -50,11 +50,13 @@ func createTimeoutContext(timeout time.Duration) (context.Context, context.Cance
 //     to ID, ascending.
 //   - page_size: the number of records to show per "page".
 //   - page: the page number to return.
-func (m MovieModel) GetAll(title string, genres []string, filters Filters) ([]*Movie, error) {
+func (m MovieModel) GetAll(title string, genres []string, filters Filters) ([]*Movie, Metadata, error) {
 	// We are using fmt.Sprintf to interpolate column names, since it is not
 	// possible to do that with postgresql placeholders.
 	query := fmt.Sprintf(`
-		SELECT id, created_at, title, year, runtime, genres, version
+		SELECT 
+			count(*) OVER(),
+			id, created_at, title, year, runtime, genres, version
 		FROM movies
 		WHERE (to_tsvector('english', title)
 					 @@ plainto_tsquery('english', $1) OR $1 = '')
@@ -69,16 +71,20 @@ func (m MovieModel) GetAll(title string, genres []string, filters Filters) ([]*M
 	args := []any{title, pq.Array(genres), filters.limit(), filters.offset()}
 	rows, err := m.DB.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, Metadata{}, err
 	}
 	defer rows.Close() // Defer closing after handling errors.
 
+	// totalRecords will receive the number of records returned by the query
+	// (i.e., the value of count(*) OVER()).
+	totalRecords := 0
 	movies := []*Movie{}
 
 	// Iterate through rows, reading each record in an entry in a Movie slice.
 	for rows.Next() {
 		var m Movie
 		err = rows.Scan(
+			&totalRecords,
 			&m.ID,
 			&m.CreatedAt,
 			&m.Title,
@@ -88,7 +94,7 @@ func (m MovieModel) GetAll(title string, genres []string, filters Filters) ([]*M
 			&m.Version,
 		)
 		if err != nil {
-			return nil, err
+			return nil, Metadata{}, err
 		}
 		movies = append(movies, &m)
 	}
@@ -96,10 +102,11 @@ func (m MovieModel) GetAll(title string, genres []string, filters Filters) ([]*M
 	// rows.Err() will contain any errors that occurred during iteration.
 	err = rows.Err()
 	if err != nil {
-		return nil, err
+		return nil, Metadata{}, err
 	}
 
-	return movies, nil
+	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
+	return movies, metadata, nil
 }
 
 // Insert adds a new record to the movie table. It accepts a pointer to a
