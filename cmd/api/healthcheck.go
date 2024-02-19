@@ -1,6 +1,8 @@
 package main
 
-import "net/http"
+import (
+	"net/http"
+)
 
 // healthcheck handles GET requests to the /v1/healthcheck endpoint.
 // It responds with the current status of the application and some system info,
