@@ -1,7 +1,6 @@
 package data
 
 import (
-	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -10,9 +9,6 @@ import (
 	validator "github.com/kvnloughead/greenlight/internal"
 	"github.com/lib/pq"
 )
-
-// Duration to use for SQL operation timeouts.
-const queryTimeout = 3 * time.Second
 
 // Movie is a struct representing data for a single movie entry.
 type Movie struct {
@@ -29,15 +25,6 @@ type Movie struct {
 // basic CRUD operations.
 type MovieModel struct {
 	DB *sql.DB
-}
-
-// createTimeoutContext accepts a time duration and returns a context and cancel
-// function with a timeout of that duration.
-//
-// The caller should defer calling the cancel() function.
-func createTimeoutContext(timeout time.Duration) (context.Context, context.CancelFunc) {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	return ctx, cancel
 }
 
 // GetAll retrieves a slice of movies from the database. The slice can be
@@ -66,7 +53,7 @@ func (m MovieModel) GetAll(title string, genres []string, filters Filters) ([]*M
 		ORDER BY %s %s, id ASC
 		LIMIT $3 OFFSET $4`, filters.sortColumn(), filters.sortDirection())
 
-	ctx, cancel := createTimeoutContext(queryTimeout)
+	ctx, cancel := CreateTimeoutContext(QueryTimeout)
 	defer cancel()
 
 	// Retrieve matching rows from database.
@@ -127,7 +114,7 @@ func (m MovieModel) Insert(movie *Movie) error {
 	// is compatible with the genres field's text[] type.
 	args := []any{movie.Title, movie.Year, movie.Runtime, pq.Array(movie.Genres)}
 
-	ctx, cancel := createTimeoutContext(queryTimeout)
+	ctx, cancel := CreateTimeoutContext(QueryTimeout)
 	defer cancel()
 
 	return m.DB.QueryRowContext(ctx, query, args...).Scan(
@@ -149,7 +136,7 @@ func (m MovieModel) Get(id int64) (*Movie, error) {
 
 	var movie Movie
 
-	ctx, cancel := createTimeoutContext(queryTimeout)
+	ctx, cancel := CreateTimeoutContext(QueryTimeout)
 	defer cancel()
 
 	err := m.DB.QueryRowContext(ctx, query, id).Scan(
@@ -197,7 +184,7 @@ func (m MovieModel) Update(movie *Movie) error {
 		movie.Version,
 	}
 
-	ctx, cancel := createTimeoutContext(queryTimeout)
+	ctx, cancel := CreateTimeoutContext(QueryTimeout)
 	defer cancel()
 
 	err := m.DB.QueryRowContext(ctx, query, args...).Scan(&movie.Version)
@@ -224,7 +211,7 @@ func (m MovieModel) Delete(id int64) error {
 
 	query := `DELETE FROM movies WHERE id = $1`
 
-	ctx, cancel := createTimeoutContext(queryTimeout)
+	ctx, cancel := CreateTimeoutContext(QueryTimeout)
 	defer cancel()
 
 	result, err := m.DB.ExecContext(ctx, query, id)
