@@ -63,8 +63,7 @@ func (app *application) writeJSON(w http.ResponseWriter, status int, data envelo
 	return nil
 }
 
-// readJSON decodes a requests body to the target destination. Requests are
-// decoded subject to the following rules. If the target destination is not a
+// readJSON decodes a requests body to the target destination. If the target destination is not a
 // non-nil pointer, panic will ensue. Only a single JSON value per request is
 // accepted.
 //
@@ -86,7 +85,7 @@ func (app *application) writeJSON(w http.ResponseWriter, status int, data envelo
 //
 //  5. If an unknown field is in the request body, an error will be returned.
 //
-//  6. If dst is anything by a non-nil pointer, then json.Decode returns a
+//  6. If dst is anything but a non-nil pointer, then json.Decode returns a
 //     json.InvalidUnmarshalError. In this case, we panic, rather than returning
 //     an error to the handler, because to do otherwise would require excessive
 //     error handling in all of our handlers.
