@@ -80,10 +80,17 @@ func (m Mailer) Send(recipient, tmplFile string, data any) error {
 	msg.SetBody("text/plain", plainBody.String())
 	msg.AddAlternative("text/html", htmlBody.String()) // Must call after SetBody
 
-	err = m.dialer.DialAndSend(msg)
-	if err != nil {
-		return err
+	// Try to send email three times before admitting failure. A 500ms timeout
+	// is set between each attempt.
+	for i := 1; i <= 3; i++ {
+		err = m.dialer.DialAndSend(msg)
+		if nil == err {
+			return nil
+		}
+
+		time.Sleep(500 * time.Millisecond)
 	}
 
-	return nil
+	// If sending fails three times, return the error.
+	return err
 }
