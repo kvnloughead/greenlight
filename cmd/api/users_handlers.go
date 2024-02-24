@@ -18,6 +18,8 @@ import (
 //
 // A hash is generated from the plaintext password via bcrypt and stored in the
 // DB.
+//
+// On successful registration, a welcome email is sent via app.mailer.
 func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
 	// Struct to store the data from the responses body. The struct's fields must
 	// be exported to use it with json.NewDecoder.
@@ -66,6 +68,13 @@ func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
 		default:
 			app.serverErrorResponse(w, r, err)
 		}
+		return
+	}
+
+	// Send welcome email.
+	err = app.mailer.Send(user.Email, "user_welcome.tmpl", user)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
 		return
 	}
 
