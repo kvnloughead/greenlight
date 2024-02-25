@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 
 	validator "github.com/kvnloughead/greenlight/internal"
@@ -73,19 +72,12 @@ func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Lauch goroutine to send a welcome email.
-	go func() {
-		defer func() {
-			// Catch panics and log resulting errors.
-			if err := recover(); err != nil {
-				app.logger.Error(fmt.Sprintf("%v", err))
-			}
-		}()
-
+	app.background(func() {
 		err = app.mailer.Send(user.Email, "user_welcome.tmpl", user)
 		if err != nil {
 			app.logger.Error(err.Error())
 		}
-	}()
+	})
 
 	// Write JSON response.
 	err = app.writeJSON(w, http.StatusAccepted, envelope{"user": user}, nil)

@@ -190,3 +190,18 @@ func (app *application) readQueryInt(qs url.Values, key string, defaultValue int
 
 	return i
 }
+
+// The background method launches a background goroutine. This goroutine
+// recovers from panics, logging the resulting errors with app.logger, and
+// calls the function argument.
+func (app *application) background(fn func()) {
+	go func() {
+		defer func() {
+			if err := recover(); err != nil {
+				app.logger.Error(fmt.Sprintf("%v", err))
+			}
+		}()
+
+		fn()
+	}()
+}

@@ -30,7 +30,7 @@ func (app *application) serve() error {
 
 	shutDownErr := make(chan error)
 
-	go func() {
+	app.background(func() {
 		// quit is a channel that carries values of type os.Signal. signal.Notify()
 		// listens for SIGINT and SIGTERM signals, relaying them to the quit channel
 		quit := make(chan os.Signal, 1)
@@ -47,7 +47,7 @@ func (app *application) serve() error {
 
 		// Shutdown server, passing any errors to shutDownErr channel.
 		shutDownErr <- srv.Shutdown(ctx)
-	}()
+	})
 
 	app.logger.Info(
 		"Starting server",
