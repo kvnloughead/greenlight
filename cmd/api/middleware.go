@@ -50,7 +50,7 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 	)
 
 	// Start background goroutine to remove old entries from the clients map.
-	app.background(func() {
+	go func() {
 		for {
 			time.Sleep(time.Minute)
 
@@ -63,7 +63,7 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 
 			mu.Unlock()
 		}
-	})
+	}()
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if app.config.limiter.enabled {

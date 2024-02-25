@@ -194,8 +194,16 @@ func (app *application) readQueryInt(qs url.Values, key string, defaultValue int
 // The background method launches a background goroutine. This goroutine
 // recovers from panics, logging the resulting errors with app.logger, and
 // calls the function argument.
+//
+// Goroutines are tracked via the app.wg WaitGroup instance, and this counter
+// is checked before shutting down the application. See app.serve() for details.
 func (app *application) background(fn func()) {
+	// Increment WaitGroup counter.
+	app.wg.Add(1)
 	go func() {
+		// Decrement WaitGroup counter after completion.
+		defer app.wg.Done()
+
 		defer func() {
 			if err := recover(); err != nil {
 				app.logger.Error(fmt.Sprintf("%v", err))

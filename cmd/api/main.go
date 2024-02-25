@@ -6,6 +6,7 @@ import (
 	"flag"
 	"log/slog"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/kvnloughead/greenlight/internal/data"
@@ -45,12 +46,17 @@ type config struct {
 	}
 }
 
-// application is a struct used for dependency injection.
+// The application struct is used for dependency injection.
 type application struct {
 	config config
 	logger *slog.Logger
 	models data.Models
 	mailer mailer.Mailer
+
+	// The WaitGroup instance allows us to track goroutines in progress, to
+	// prevent shutdown until they are all completed. No need for initialization,
+	// the zero-valued sync.WaitGroup is useable, with counter set to 0.
+	wg sync.WaitGroup
 }
 
 func main() {

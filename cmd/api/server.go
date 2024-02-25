@@ -30,7 +30,7 @@ func (app *application) serve() error {
 
 	shutDownErr := make(chan error)
 
-	app.background(func() {
+	go func() {
 		// quit is a channel that carries values of type os.Signal. signal.Notify()
 		// listens for SIGINT and SIGTERM signals, relaying them to the quit channel
 		quit := make(chan os.Signal, 1)
@@ -46,8 +46,17 @@ func (app *application) serve() error {
 		defer cancel()
 
 		// Shutdown server, passing any errors to shutDownErr channel.
-		shutDownErr <- srv.Shutdown(ctx)
-	})
+		err := srv.Shutdown(ctx)
+		if err != nil {
+			shutDownErr <- err
+		}
+
+		app.logger.Info("completing background tasks", "addr", srv.Addr)
+
+		// Block until WaitGroup counter of goroutines is 0.
+		app.wg.Wait()
+		shutDownErr <- nil
+	}()
 
 	app.logger.Info(
 		"Starting server",
