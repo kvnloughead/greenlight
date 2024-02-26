@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	validator "github.com/kvnloughead/greenlight/internal"
 	"github.com/kvnloughead/greenlight/internal/data"
@@ -14,12 +15,13 @@ import (
 //
 // The request body must contain a name, email, and password. Request bodies
 // are validated by data.ValidateUser. A failedValidationResponse error is sent
-// if one or more fields fails validation, or if the email is a duplicate.
+// if one or more fields fails validation, or if the email is a duplicate. A
+// hash is generated from the plaintext password via bcrypt and stored in the
+// database.
 //
-// A hash is generated from the plaintext password via bcrypt and stored in the
-// DB.
-//
-// On successful registration, a welcome email is sent via app.mailer.
+// On successful registration, a token is generated securely and encrypted with
+// SHA-256. This token is sent to the user in a a welcome email via app.mailer,
+// with instructions on how to activate the account.
 func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
 	// Struct to store the data from the responses body. The struct's fields must
 	// be exported to use it with json.NewDecoder.
@@ -71,9 +73,24 @@ func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Create activation token and add to database.
+	token, err := app.models.Tokens.New(user.ID, 72*time.Hour, data.Activation)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
 	// Lauch goroutine to send a welcome email.
 	app.background(func() {
-		err = app.mailer.Send(user.Email, "user_welcome.tmpl", user)
+		data := struct {
+			Token *data.Token
+			User  *data.User
+		}{
+			Token: token,
+			User:  user,
+		}
+
+		err = app.mailer.Send(user.Email, "user_welcome.tmpl", data)
 		if err != nil {
 			app.logger.Error(err.Error())
 		}
