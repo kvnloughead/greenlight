@@ -6,9 +6,9 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// routes initializes and returns an http.Handler with all the route definitions
-// for the application. It uses httprouter for routing requests to their
-// corresponding handlers based on the HTTP method and path.
+// The routes function initializes and returns an http.Handler with all the
+// route definitions for the application. It uses httprouter for routing
+// requests to their corresponding handlers based on the HTTP method and path.
 //
 // The defined routes are as follows:
 //
@@ -25,6 +25,8 @@ import (
 //   - DELETE /v1/movies/:id	  			Delete a specific movie.
 //
 //   - POST   /v1/users         			Register a new user.
+//
+//   - PUT    /v1/users/activated     Activates a user.
 //
 //   - POST   /v1/tokens/activation   Generate a new activation token.
 //
@@ -51,6 +53,7 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodDelete, "/v1/movies/:id", app.deleteMovie)
 
 	router.HandlerFunc(http.MethodPost, "/v1/users", app.registerUser)
+	router.HandlerFunc(http.MethodPut, "/v1/users/activated", app.activateUser)
 
 	router.HandlerFunc(http.MethodPost, "/v1/tokens/activation",
 		app.createActivationToken)

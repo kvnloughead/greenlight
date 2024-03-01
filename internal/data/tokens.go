@@ -119,9 +119,10 @@ func (m TokenModel) Insert(token *Token) error {
 	return err
 }
 
-// The TokenModel's DeleteMatchingTokens method deletes all tokens that match
+// The TokenModel's DeleteAllForUser method deletes all tokens that match
 // the given scope and user ID.
-func (m TokenModel) DeleteMatchingTokens(scope, userID string) error {
+func (m TokenModel) DeleteAllForUser(scope Scope, userID int64) error {
+
 	query := `DELETE FROM tokens WHERE scope = $1 AND user_id = $2`
 
 	ctx, cancel := CreateTimeoutContext(QueryTimeout)
@@ -129,4 +130,9 @@ func (m TokenModel) DeleteMatchingTokens(scope, userID string) error {
 
 	_, err := m.DB.ExecContext(ctx, query, scope, userID)
 	return err
+}
+
+// CalculateHash takes a string a returns its SHA-256 hash.
+func CalculateHash(s string) [32]byte {
+	return sha256.Sum256([]byte(s))
 }
