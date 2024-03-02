@@ -12,23 +12,25 @@ import (
 //
 // The defined routes are as follows:
 //
-//   - GET    /v1/healthcheck   			Show application information.
+//   - GET    /v1/healthcheck   				 Show application information.
 //
-//   - GET    /v1/movies							Show details of all movies (or a subset).
+//   - GET    /v1/movies								 Show details of a subset of	 movies.
 //
-//   - POST   /v1/movies							Create a new movie.
+//   - POST   /v1/movies								 Create a new movie.
 //
-//   - GET    /v1/movies/:id	  			Show details of a specific movie.
+//   - GET    /v1/movies/:id	  				 Show details of a specific movie.
 //
-//   - PATCH  /v1/movies/:id					Update details of a specific movie.
+//   - PATCH  /v1/movies/:id						 Update details of a specific movie.
 //
-//   - DELETE /v1/movies/:id	  			Delete a specific movie.
+//   - DELETE /v1/movies/:id	  				 Delete a specific movie.
 //
-//   - POST   /v1/users         			Register a new user.
+//   - POST   /v1/users         				 Register a new user.
 //
-//   - PUT    /v1/users/activated     Activates a user.
+//   - PUT    /v1/users/activated     	 Activates a user.
 //
-//   - POST   /v1/tokens/activation   Generate a new activation token.
+//   - POST   /v1/tokens/activation   	 Generate a new activation token.
+//
+//   - POST   /v1/tokens/authentication  Generate an authentication token.
 //
 // This function also sets up custom error handling for scenarios where no
 // route is matched (404 Not Found) and when a method is not allowed for a
@@ -57,6 +59,8 @@ func (app *application) routes() http.Handler {
 
 	router.HandlerFunc(http.MethodPost, "/v1/tokens/activation",
 		app.createActivationToken)
+	router.HandlerFunc(http.MethodPost, "/v1/tokens/authentication",
+		app.createAuthenticationToken)
 
 	return app.recoverPanic(app.rateLimit(router))
 }

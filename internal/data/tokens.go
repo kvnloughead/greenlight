@@ -12,6 +12,29 @@ import (
 
 // Type Scope is a string type for token scopes. Valid scopes are Activation
 // and Authentication, and validitiy can be checked via the Valid method.
+//
+// Activation scoped tokens are used for activating new users. The process of
+// activating new users is as follows.
+//
+//  1. An activation token is sent to the user in a welcome email received when
+//     they register.
+//  2. To activate their account, the user needs to to send the token in a PUT
+//     request to /v1/users/activated.
+//  3. New tokens an be generated via a POST request to /v1/tokens/activation.
+//
+// Authentication scoped tokens are stateful authentication tokens.
+// The process of authenticating with them is as follows.
+//
+//  1. The client sends a JSON request to a new POST /v1/tokens/authentication
+//     endpoint containing their credentials (email and password).
+//  2. We look up the user record based on the email, and check if the
+//     password provided is the correct one for the user. If it’s not, then we
+//     send an error response.
+//  3. If the password is correct, we use our app.models.Tokens.New() method
+//     to generate a token with an expiry time of 24 hours and the scope
+//     "authentication".
+//  4. We send this authentication token back to the client in a JSON response
+//     body.
 type Scope string
 
 const (
@@ -31,11 +54,11 @@ func (s Scope) Valid() bool {
 }
 
 type Token struct {
-	Plaintext string
-	Hash      []byte
-	UserID    int64
-	Expiry    time.Time
-	Scope     Scope
+	Plaintext string    `json:"token"`
+	Hash      []byte    `json:"-"`
+	UserID    int64     `json:"-"`
+	Expiry    time.Time `json:"expiry"`
+	Scope     Scope     `json:"-"`
 }
 
 // The generateToken function accepts a user ID, an expiry duration, and a

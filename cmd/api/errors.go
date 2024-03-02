@@ -78,3 +78,9 @@ func (app *application) rateLimitExceededReponse(w http.ResponseWriter, r *http.
 	msg := "rate limit exceeded"
 	app.errorResponse(w, r, http.StatusTooManyRequests, msg)
 }
+
+// notFoundResponse sends JSON response with a 404 status code.
+func (app *application) invalidCredentialsResponse(w http.ResponseWriter, r *http.Request) {
+	msg := "invalid authentication credentials"
+	app.errorResponse(w, r, http.StatusUnauthorized, msg)
+}
