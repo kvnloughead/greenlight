@@ -164,3 +164,51 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+// The requireAuthenticatedUser middleware prevents users from accessing a
+// resource unless they are authenticated. If they aren't authenticated, a 401
+// response is sent.
+//
+// This middleware accepts and returns an http.HandlerFunc, as opposed to
+// http.Handler, which allows us to wrap our individual /v1/movie** routes
+// with it.
+func (app *application) requireAuthenticatedUser(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := app.contextGetUser(r)
+
+		if user.IsAnonymous() {
+			app.authenticationRequiredResponse(w, r)
+			return
+		}
+
+		if !user.Activated {
+			app.activationRequiredResponse(w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// The requireActivatedUser middleware prevents users from accessing a resource
+// unless they are authenticated and activated. It authenticates users by
+// calling app.requireAuthenticatedUser.
+//
+// If the user isn't authenticated, a 401 response is sent.
+// If the user is authenticated, but not activated, a 403 response is sent.
+//
+// This middleware accepts and returns an http.HandlerFunc, as opposed to
+// http.Handler, which allows us to wrap our individual /v1/movie** routes
+// with it.
+func (app *application) requireActivatedUser(next http.HandlerFunc) http.HandlerFunc {
+	fn := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := app.contextGetUser(r)
+
+		if !user.Activated {
+			app.activationRequiredResponse(w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+
+	return app.requireAuthenticatedUser(fn)
+}

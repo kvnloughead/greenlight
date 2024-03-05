@@ -98,3 +98,18 @@ func (app *application) invalidAuthenticationTokenResponse(w http.ResponseWriter
 	msg := "invalid authentication token"
 	app.errorResponse(w, r, http.StatusUnauthorized, msg)
 }
+
+// An authenticationRequiredResponse is sent with a 401 status code when an
+// unauthenticated user attempts to access a resource that requires
+// authentication.
+func (app *application) authenticationRequiredResponse(w http.ResponseWriter, r *http.Request) {
+	msg := "you must be authenticated to access this resource"
+	app.errorResponse(w, r, http.StatusUnauthorized, msg)
+}
+
+// An activationRequiredResponse is sent with a 403 status code when an
+// unactivated user attempts to access a resource that requires activation.
+func (app *application) activationRequiredResponse(w http.ResponseWriter, r *http.Request) {
+	msg := "your user account must be activated to access this resource"
+	app.errorResponse(w, r, http.StatusForbidden, msg)
+}
