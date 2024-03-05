@@ -30,6 +30,14 @@ type User struct {
 	Version   int32     `json:"-"`
 }
 
+// AnonymousUser is a pointer to an empty, non-activated, User struct.
+var AnonymousUser = &User{}
+
+// The IsAnonymous returns true if the calling user is equal to AnonymousUser.
+func (u *User) IsAnonymous() bool {
+	return u == AnonymousUser
+}
+
 type UserModel struct {
 	DB *sql.DB
 }

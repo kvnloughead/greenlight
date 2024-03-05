@@ -84,3 +84,17 @@ func (app *application) invalidCredentialsResponse(w http.ResponseWriter, r *htt
 	msg := "invalid authentication credentials"
 	app.errorResponse(w, r, http.StatusUnauthorized, msg)
 }
+
+// The invalidAuthenicationTokenResponse helper sends JSON response with a 401
+// status code and "invalid authentication token" message. It also sets the
+// "WWW-Authenticate" header to "Bearer" to remind the client that a bearer
+// token is expected for authentication.
+//
+// This response helper is intended for use as a generic response to invalid
+// attempts at authentication. For example, if the authentication header was
+// missing or malformed.
+func (app *application) invalidAuthenticationTokenResponse(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("WWW-Authenticate", "Bearer")
+	msg := "invalid authentication token"
+	app.errorResponse(w, r, http.StatusUnauthorized, msg)
+}
