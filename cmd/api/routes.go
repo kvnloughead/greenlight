@@ -14,15 +14,20 @@ import (
 //
 //   - GET    /v1/healthcheck   				 Show application information.
 //
-//   - GET    /v1/movies								 Show details of a subset of	 movies.
+//   - GET    /v1/movies								 Show details of a subset of movies.
+//     [permissions - movies:read]
 //
 //   - POST   /v1/movies								 Create a new movie.
+//     [permissions - movies:write]
 //
 //   - GET    /v1/movies/:id	  				 Show details of a specific movie.
+//     [permissions - movies:read]
 //
 //   - PATCH  /v1/movies/:id						 Update details of a specific movie.
+//     [permissions - movies:read]
 //
 //   - DELETE /v1/movies/:id	  				 Delete a specific movie.
+//     [permissions - movies:read]
 //
 //   - POST   /v1/users         				 Register a new user.
 //
