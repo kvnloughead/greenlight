@@ -113,3 +113,10 @@ func (app *application) activationRequiredResponse(w http.ResponseWriter, r *htt
 	msg := "your user account must be activated to access this resource"
 	app.errorResponse(w, r, http.StatusForbidden, msg)
 }
+
+// An permissionRequiredResponse is sent with a 403 status code when a user
+// attempts to access a resource that they don't have permission to access.
+func (app *application) permissionRequiredResponse(w http.ResponseWriter, r *http.Request) {
+	msg := "your user account doesn't have the necessary permissions to access this resource"
+	app.errorResponse(w, r, http.StatusForbidden, msg)
+}

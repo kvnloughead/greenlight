@@ -53,19 +53,18 @@ func (app *application) routes() http.Handler {
 
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthcheck)
 
-	router.HandlerFunc(http.MethodGet, "/v1/movies", app.requireActivatedUser(app.listMovies))
-	router.HandlerFunc(http.MethodPost, "/v1/movies", app.requireActivatedUser(app.createMovie))
-	router.HandlerFunc(http.MethodGet, "/v1/movies/:id", app.requireActivatedUser(app.showMovie))
-	router.HandlerFunc(http.MethodPatch, "/v1/movies/:id", app.requireActivatedUser(app.updateMovie))
-	router.HandlerFunc(http.MethodDelete, "/v1/movies/:id", app.requireActivatedUser(app.deleteMovie))
+	// The /movies endpoints require either movies:read or movies:write permission
+	router.HandlerFunc(http.MethodGet, "/v1/movies", app.requirePermission("movies:read", app.listMovies))
+	router.HandlerFunc(http.MethodPost, "/v1/movies", app.requirePermission("movies:write", app.createMovie))
+	router.HandlerFunc(http.MethodGet, "/v1/movies/:id", app.requirePermission("movies:read", app.showMovie))
+	router.HandlerFunc(http.MethodPatch, "/v1/movies/:id", app.requirePermission("movies:write", app.updateMovie))
+	router.HandlerFunc(http.MethodDelete, "/v1/movies/:id", app.requirePermission("movies:write", app.deleteMovie))
 
 	router.HandlerFunc(http.MethodPost, "/v1/users", app.registerUser)
 	router.HandlerFunc(http.MethodPut, "/v1/users/activated", app.activateUser)
 
-	router.HandlerFunc(http.MethodPost, "/v1/tokens/activation",
-		app.createActivationToken)
-	router.HandlerFunc(http.MethodPost, "/v1/tokens/authentication",
-		app.createAuthenticationToken)
+	router.HandlerFunc(http.MethodPost, "/v1/tokens/activation", app.createActivationToken)
+	router.HandlerFunc(http.MethodPost, "/v1/tokens/authentication", app.createAuthenticationToken)
 
 	return app.recoverPanic(app.rateLimit(app.authenticate(router)))
 }

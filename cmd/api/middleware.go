@@ -212,3 +212,38 @@ func (app *application) requireActivatedUser(next http.HandlerFunc) http.Handler
 
 	return app.requireAuthenticatedUser(fn)
 }
+
+// The requirePermission middleware prevents users from accessing a resource
+// unless they are authenticated, activated, and have the necessary permission.
+// It authenticates users and checks their activation status by calling
+// app.requireAuthenticatedUser.
+//
+// If the user isn't authenticated, a 401 response is sent.
+// If the user is authenticated, but not activated, or if the user doesn't have
+// the correct permissions, a 403 response is sent.
+//
+// This middleware accepts and returns an http.HandlerFunc, as opposed to
+// http.Handler, which allows us to wrap our individual /v1/movie** routes
+// with it.
+func (app *application) requirePermission(permission string, next http.HandlerFunc) http.HandlerFunc {
+	fn := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// There is no need to check IsAnonymous, this is handled by an earlier
+		// middleware in the chain.
+		user := app.contextGetUser(r)
+
+		permissions, err := app.models.Permissions.GetAllForUser(user.ID)
+		if err != nil {
+			app.serverErrorResponse(w, r, err)
+			return
+		}
+
+		if !permissions.Includes(permission) {
+			app.permissionRequiredResponse(w, r)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+
+	return app.requireActivatedUser(fn)
+}
