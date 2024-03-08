@@ -167,6 +167,13 @@ func (app *application) activateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Grant activated user "movies:write" permission.
+	err = app.models.Permissions.AddForUser(user.ID, data.MoviesWrite)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
 	env := envelope{"message": "user successfully activated", "user": user}
 	err = app.writeJSON(w, http.StatusOK, env, nil)
 	if err != nil {
