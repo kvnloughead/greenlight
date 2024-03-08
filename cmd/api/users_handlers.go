@@ -80,6 +80,13 @@ func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Grant user the "movies:read" permission.
+	err = app.models.Permissions.AddForUser(user.ID, "movies:read")
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
 	// Lauch goroutine to send a welcome email.
 	app.background(func() {
 		data := struct {
@@ -89,7 +96,6 @@ func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
 			Token: token,
 			User:  user,
 		}
-
 		err = app.mailer.Send(user.Email, "user_welcome.tmpl", data)
 		if err != nil {
 			app.logger.Error(err.Error())

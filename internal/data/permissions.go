@@ -1,6 +1,10 @@
 package data
 
-import "database/sql"
+import (
+	"database/sql"
+
+	"github.com/lib/pq"
+)
 
 // Permissions is a string slice for storing permission codes.
 type Permissions []string
@@ -67,4 +71,21 @@ func (m PermissionModel) GetAllForUser(userID int64) (Permissions, error) {
 	}
 
 	return permissions, nil
+}
+
+// PermissionModel.AddForUser grants one or more permissions to a user. The
+// permissions should be supplied as a variadic list of string values.
+func (m PermissionModel) AddForUser(userID int64, permissions ...string) error {
+	// For each permission in Permissions, insert a record with userID and
+	// permissionID into users_permissions table. $2 must be a postgresql array
+	// of permission codes.
+	query := `
+		INSERT INTO users_permissions
+		SELECT $1, permissions.id FROM permissions WHERE permissions.code = ANY($2)
+	`
+	ctx, cancel := CreateTimeoutContext(QueryTimeout)
+	defer cancel()
+
+	_, err := m.DB.ExecContext(ctx, query, userID, pq.Array(permissions))
+	return err
 }
