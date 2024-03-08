@@ -225,7 +225,7 @@ func (app *application) requireActivatedUser(next http.HandlerFunc) http.Handler
 // This middleware accepts and returns an http.HandlerFunc, as opposed to
 // http.Handler, which allows us to wrap our individual /v1/movie** routes
 // with it.
-func (app *application) requirePermission(permission string, next http.HandlerFunc) http.HandlerFunc {
+func (app *application) requirePermission(permission data.PermissionCode, next http.HandlerFunc) http.HandlerFunc {
 	fn := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// There is no need to check IsAnonymous, this is handled by an earlier
 		// middleware in the chain.

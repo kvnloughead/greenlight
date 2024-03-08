@@ -6,8 +6,15 @@ import (
 	"github.com/lib/pq"
 )
 
+// String type for permission codes. Current options are "movies:read" and
+// "movies:write"
+type PermissionCode string
+
+var MoviesRead = PermissionCode("movies:read")
+var MoviesWrite = PermissionCode("movies:write")
+
 // Permissions is a string slice for storing permission codes.
-type Permissions []string
+type Permissions []PermissionCode
 
 type Permission struct {
 	ID   int64  `json:"id"`
@@ -20,7 +27,7 @@ type PermissionModel struct {
 
 // Permissions.Includes return a boolean indicating whether a given permission
 // code is stored in the calling Permissions slice.
-func (p Permissions) Includes(code string) bool {
+func (p Permissions) Includes(code PermissionCode) bool {
 	for i := range p {
 		if p[i] == code {
 			return true
@@ -58,7 +65,7 @@ func (m PermissionModel) GetAllForUser(userID int64) (Permissions, error) {
 
 	// Iterate through rows, adding each entry to the permissions slice.
 	for rows.Next() {
-		var code string
+		var code PermissionCode
 		err = rows.Scan(&code)
 		if err != nil {
 			return nil, err
@@ -75,7 +82,7 @@ func (m PermissionModel) GetAllForUser(userID int64) (Permissions, error) {
 
 // PermissionModel.AddForUser grants one or more permissions to a user. The
 // permissions should be supplied as a variadic list of string values.
-func (m PermissionModel) AddForUser(userID int64, permissions ...string) error {
+func (m PermissionModel) AddForUser(userID int64, permissions ...PermissionCode) error {
 	// For each permission in Permissions, insert a record with userID and
 	// permissionID into users_permissions table. $2 must be a postgresql array
 	// of permission codes.

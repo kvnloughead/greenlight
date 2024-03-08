@@ -81,7 +81,7 @@ func (app *application) registerUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Grant user the "movies:read" permission.
-	err = app.models.Permissions.AddForUser(user.ID, "movies:read")
+	err = app.models.Permissions.AddForUser(user.ID, data.MoviesRead)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
