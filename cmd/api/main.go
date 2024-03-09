@@ -6,6 +6,7 @@ import (
 	"flag"
 	"log/slog"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -29,20 +30,26 @@ type config struct {
 		maxIdleTime  time.Duration
 	}
 
-	// limiter is a struct containing configuration for our rate limiter.
+	// cfg.limiter is a struct containing configuration for our rate limiter.
 	limiter struct {
 		rps     float64 // Requests per second. Defaults to 2.
 		burst   int     // Max request in burst. Defaults to 4.
 		enabled bool    // Defaults to true.
 	}
 
-	// smtp is a struct containing configuration for our SMTP server.
+	// cfg.smtp is a struct containing configuration for our SMTP server.
 	smtp struct {
 		host     string
 		port     int
 		username string
 		password string
 		sender   string
+	}
+
+	// cfg.cors is a struct containing a string slice of trusted origins.
+	// If	the slice is empty, CORS will be enabled for all origins.
+	cors struct {
+		trustedOrigins []string
 	}
 }
 
@@ -90,6 +97,13 @@ func main() {
 	flag.StringVar(&cfg.smtp.username, "smtp-username", "d2d67cf14feb94", "SMTP username")
 	flag.StringVar(&cfg.smtp.password, "smtp-password", "62eabaae7885b8", "SMTP password")
 	flag.StringVar(&cfg.smtp.sender, "smtp-sender", "Greenlight <no-reply@github.com/kvnloughead/greenlight>", "SMTP sender")
+
+	flag.Func("cors-trusted-origins",
+		"Space-separated trusted CORS origins",
+		func(s string) error {
+			cfg.cors.trustedOrigins = strings.Fields(s)
+			return nil
+		})
 
 	flag.Parse()
 
