@@ -248,13 +248,33 @@ func (app *application) requirePermission(permission data.PermissionCode, next h
 	return app.requireActivatedUser(fn)
 }
 
-// The enableCORS middleware allows CORS from all sources, by setting the
-// "Access-Control-Allow-Origin" header to "*".
+// The isPreflight helper returns true if the request is preflight. A preflight
+// request must
+//
+//   - use the OPTIONS method
+//   - have an Origin header
+//   - have an Access-Control-Allow-Methods header
+func (app *application) isPreflight(r *http.Request) bool {
+	return r.Method == http.MethodOptions &&
+		r.Header.Get("Origin") != "" &&
+		r.Header.Get("Access-Control-Request-Method") != ""
+}
+
+// The enableCORS middleware allows CORS from all trusted origins. Trusted
+// origins must be passed as the -cors-trusted-origin flag at runtime.
+//
+// In the case of preflight requests, the appropriate response headers are set
+// and a 200 OK response is send. We send 200 rather than 204 because some
+// browsers don't support 204 No Content responses.
+//
+// This middleware allows the Authorization header in cross-origin requests, so
+// it it critical to not set the Access-Control-Allow-Origin header to *.
 func (app *application) enableCORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Tell caches that response may vary depending on the value of the
-		// request's Origin header.
+		// following request headers.
 		w.Header().Set("Vary", "Origin")
+		w.Header().Set("Vary", "Access-Control-Request-Method")
 
 		origin := r.Header.Get("Origin")
 
@@ -262,6 +282,18 @@ func (app *application) enableCORS(next http.Handler) http.Handler {
 			for i := range app.config.cors.trustedOrigins {
 				if app.config.cors.trustedOrigins[i] == origin {
 					w.Header().Set("Access-Control-Allow-Origin", origin)
+
+					// If the request is a preflight request, set the necessary headers
+					// and send a 200 OK response with no further action.
+					if app.isPreflight(r) {
+						w.Header().Set("Access-Control-Allow-Methods",
+							"OPTIONS, PUT, PATCH, DELETE")
+						w.Header().Set("Access-Control-Allow-Headers",
+							"Authorization, Content-Type")
+						w.WriteHeader(http.StatusOK)
+						return
+					}
+
 					break
 				}
 			}
