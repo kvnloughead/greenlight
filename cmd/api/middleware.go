@@ -327,3 +327,20 @@ func (app *application) metrics(next http.Handler) http.Handler {
 		totalProcessingTimeMicroseconds.Add(duration)
 	})
 }
+
+// The logRequest middleware logs info about each HTTP request, including the
+// request's IP, protocol, method, and URI.
+func (app *application) logRequest(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var (
+			ip       = r.RemoteAddr
+			protocol = r.Proto
+			method   = r.Method
+			uri      = r.URL.RequestURI()
+		)
+
+		app.logger.Info("received request", "ip", ip, "protocol", protocol, "method", method, "uri", uri)
+
+		next.ServeHTTP(w, r)
+	})
+}
