@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/justinas/alice"
 	"github.com/kvnloughead/greenlight/internal/data"
 )
 
@@ -73,5 +74,6 @@ func (app *application) routes() http.Handler {
 	// Expose application metrics as a JSON response to HTTP request.
 	router.Handler(http.MethodGet, "/debug/vars", expvar.Handler())
 
-	return app.metrics(app.recoverPanic(app.enableCORS(app.rateLimit(app.authenticate(router)))))
+	middlewares := alice.New(app.logRequest, app.metrics, app.recoverPanic, app.enableCORS, app.rateLimit, app.authenticate)
+	return middlewares.Then(router)
 }
