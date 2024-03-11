@@ -6,67 +6,83 @@ import (
 )
 
 // logError logs an error message, as well as the request method and URL.
-func (app *application) logError(r *http.Request, err error) {
+func (app *application) logError(r *http.Request, errMsg string) {
 	var (
 		method = r.Method
 		uri    = r.URL.RequestURI() // returns /path?query from the request URL
 	)
 
-	app.logger.Error(err.Error(), "method", method, "uri", uri)
+	app.logger.Error(errMsg, "method", method, "uri", uri)
 }
 
-// errorResponse sends arbitrary, JSON formatted errors to the client.
-// It accepts a status code and a message of any type, wrapping the message in
-// a JSON object with key "error". The result is sent using app.writeJSON.
+// The errorResponse helper sends arbitrary, JSON formatted errors to the
+// client. It accepts a status code and a message of any type, wrapping the
+// message in a JSON object with key "error". The result is sent using
+// app.writeJSON.
 //
 // If app.writeJSON encounters an error, the function logs the error and sends
 // a blank response with a 500 status code.
+//
+// Error message are also logged to the terminal via app.logError().
 func (app *application) errorResponse(w http.ResponseWriter, r *http.Request, status int, message any) {
 	env := envelope{"error": message}
 
+	// Log the error.
+	switch msg := message.(type) {
+	case error:
+		app.logError(r, msg.Error())
+	case string:
+		app.logError(r, msg)
+	default:
+		app.logError(r, fmt.Sprintf("%v", msg))
+	}
+
 	err := app.writeJSON(w, status, env, nil)
 	if err != nil {
-		app.logError(r, err)
+		app.logError(r, err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }
 
-// serverErrorResponse logs an unexpected error at runtime.
+// The serverErrorResponse helper logs an unexpected error at runtime.
 // It logs the detailed error message, and uses app.errorResponse to send a 500
 // Internal Server Error with a generic error message to the client.
 func (app *application) serverErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
-	app.logError(r, err)
+	app.logError(r, err.Error())
 
 	msg := "the server encountered a problem and couldn't process your request"
 	app.errorResponse(w, r, http.StatusInternalServerError, msg)
 }
 
-// notFoundResponse sends JSON response with a 404 status code.
+// notFoundResponse sends JSON response with a 404 status code, and logs it
+// using app.errorResponse().
 func (app *application) notFoundResponse(w http.ResponseWriter, r *http.Request) {
 	msg := "the requested resource cannot be found"
 	app.errorResponse(w, r, http.StatusNotFound, msg)
 }
 
-// methodNotAllowedResponse sends a JSON response with a 405 status code.
+// methodNotAllowedResponse sends a JSON response with a 405 status code, and
+// logs it using app.errorResponse().
 func (app *application) methodNotAllowedResponse(w http.ResponseWriter, r *http.Request) {
 	msg := fmt.Sprintf("the %s method is not allowed for this resource", r.Method)
 	app.errorResponse(w, r, http.StatusMethodNotAllowed, msg)
 }
 
-// badRequestResponse sends a JSON response with a 400 status code. It accepts
-// an error argument and includes it in the response.
+// badRequestResponse sends a JSON response with a 400 status code, and logs it
+// using app.errorResponse(). It accepts an error argument and includes it in the
+// response.
 func (app *application) badRequestResponse(w http.ResponseWriter, r *http.Request, err error) {
 	app.errorResponse(w, r, http.StatusBadRequest, err.Error())
 }
 
-// failedValidationResponse sends a JSON response with a 422 status code. It
-// accepts a map of errors and their messages and sends them in the response.
+// failedValidationResponse sends a JSON response with a 422 status code, and logs it using app.errorResponse(). It accepts a map of errors and their messages and sends them in the response.
 func (app *application) failedValidationResponse(w http.ResponseWriter, r *http.Request, errors map[string]string) {
 	app.errorResponse(w, r, http.StatusUnprocessableEntity, errors)
 }
 
 // editConflictResponse sends a JSON response with a 409 status code and a
-// message that indicates a conflict while attempting to edit a resource.
+// message that indicates a conflict while attempting to edit a resource. It
+// also and logs the error using app.errorResponse().
 func (app *application) editConflictResponse(w http.ResponseWriter, r *http.Request) {
 	msg := "unable to update the record due to an edit conflict, please try again"
 	app.errorResponse(w, r, http.StatusConflict, msg)
@@ -79,7 +95,8 @@ func (app *application) rateLimitExceededReponse(w http.ResponseWriter, r *http.
 	app.errorResponse(w, r, http.StatusTooManyRequests, msg)
 }
 
-// notFoundResponse sends JSON response with a 404 status code.
+// notFoundResponse sends JSON response with a 404 status code, and logs it
+// using app.errorResponse().
 func (app *application) invalidCredentialsResponse(w http.ResponseWriter, r *http.Request) {
 	msg := "invalid authentication credentials"
 	app.errorResponse(w, r, http.StatusUnauthorized, msg)
