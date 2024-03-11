@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"database/sql"
+	"expvar"
 	"flag"
 	"log/slog"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -119,6 +121,9 @@ func main() {
 	defer db.Close()
 	logger.Info("database connection pool established")
 
+	// Set additional debug variables, accessible at GET /debug/vars.
+	setDebugVars(db)
+
 	app := application{
 		config: cfg,
 		logger: logger,
@@ -158,4 +163,24 @@ func openDB(cfg config) (*sql.DB, error) {
 	}
 
 	return db, nil
+}
+
+// The setDebugVars method publishes additional data to expvar handler. Debug
+// variables are available at GET /debug/vars. Data published:
+//
+//   - version: the API's version number
+//   - timestamp: a Unix timestamp
+//   - gouroutines: the number of current goroutines running
+//   - database: the result of db.Stats()
+func setDebugVars(db *sql.DB) {
+	expvar.NewString("version").Set(version)
+	expvar.Publish("timestamp", expvar.Func(func() any {
+		return time.Now().Unix()
+	}))
+	expvar.Publish("goroutine", expvar.Func(func() any {
+		return runtime.NumGoroutine()
+	}))
+	expvar.Publish("database", expvar.Func(func() any {
+		return db.Stats()
+	}))
 }

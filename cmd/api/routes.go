@@ -1,6 +1,7 @@
 package main
 
 import (
+	"expvar"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -38,6 +39,8 @@ import (
 //
 //   - POST   /v1/tokens/authentication  Generate an authentication token.
 //
+//   - GET    /debug/vars                Display application metrics.
+//
 // This function also sets up custom error handling for scenarios where no
 // route is matched (404 Not Found) and when a method is not allowed for a
 // given route (405 Method Not Allowed), using the custom error handlers
@@ -67,5 +70,8 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodPost, "/v1/tokens/activation", app.createActivationToken)
 	router.HandlerFunc(http.MethodPost, "/v1/tokens/authentication", app.createAuthenticationToken)
 
-	return app.recoverPanic(app.enableCORS(app.rateLimit(app.authenticate(router))))
+	// Expose application metrics as a JSON response to HTTP request.
+	router.Handler(http.MethodGet, "/debug/vars", expvar.Handler())
+
+	return app.metrics(app.recoverPanic(app.enableCORS(app.rateLimit(app.authenticate(router)))))
 }

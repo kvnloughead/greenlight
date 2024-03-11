@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"expvar"
 	"fmt"
 	"net"
 	"net/http"
@@ -300,5 +301,29 @@ func (app *application) enableCORS(next http.Handler) http.Handler {
 
 		}
 		next.ServeHTTP(w, r)
+	})
+}
+
+// The metrics middleware tracks some request specific data for sharing with
+// the /debug/vars endpoint. Tracked information:
+//
+//   - total number of requests recieved
+//   - total responses sent
+//   - total processing time (in microseconds)
+func (app *application) metrics(next http.Handler) http.Handler {
+	var (
+		totalRequestsRecieved           = expvar.NewInt("total_requests_recieved")
+		totalResponsesSent              = expvar.NewInt("total_responses_sent")
+		totalProcessingTimeMicroseconds = expvar.NewInt("total_processing_time_μs")
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		totalRequestsRecieved.Add(1)
+
+		next.ServeHTTP(w, r)
+
+		totalResponsesSent.Add(1)
+		duration := time.Since(start).Microseconds()
+		totalProcessingTimeMicroseconds.Add(duration)
 	})
 }
