@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -304,30 +305,6 @@ func (app *application) enableCORS(next http.Handler) http.Handler {
 	})
 }
 
-// The metrics middleware tracks some request specific data for sharing with
-// the /debug/vars endpoint. Tracked information:
-//
-//   - total number of requests recieved
-//   - total responses sent
-//   - total processing time (in microseconds)
-func (app *application) metrics(next http.Handler) http.Handler {
-	var (
-		totalRequestsRecieved           = expvar.NewInt("total_requests_recieved")
-		totalResponsesSent              = expvar.NewInt("total_responses_sent")
-		totalProcessingTimeMicroseconds = expvar.NewInt("total_processing_time_μs")
-	)
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		totalRequestsRecieved.Add(1)
-
-		next.ServeHTTP(w, r)
-
-		totalResponsesSent.Add(1)
-		duration := time.Since(start).Microseconds()
-		totalProcessingTimeMicroseconds.Add(duration)
-	})
-}
-
 // The logRequest middleware logs info about each HTTP request, including the
 // request's IP, protocol, method, and URI.
 func (app *application) logRequest(next http.Handler) http.Handler {
@@ -342,5 +319,99 @@ func (app *application) logRequest(next http.Handler) http.Handler {
 		app.logger.Info("received request", "ip", ip, "protocol", protocol, "method", method, "uri", uri)
 
 		next.ServeHTTP(w, r)
+	})
+}
+
+//
+// Metrics
+//
+
+// metricsResponseWriter wraps (and implements) the http.ResponseWriter
+// interface, enabling the saving of status codes for tracking in the metrics
+// middleware.
+//
+// It has an integer field for recording the response's status code, and a
+// boolean field that tracks whether the response headers have been written
+// already.
+//
+// It implements the Header, WriteHeader, and Write methods of the wrapped
+// interface, as well as an Unwrap method that returns the wrapped interface.
+type metricsResponseWriter struct {
+	wrapped       http.ResponseWriter
+	statusCode    int
+	headerWritten bool
+}
+
+// newMetricResponseWriter returns a metricsResponseWriter struct that wraps
+// the ResponseWriter that was passed as an argument. The statusCode field is
+// set to http.StatusOK (200).
+func newMetricResponseWriter(w http.ResponseWriter) *metricsResponseWriter {
+	return &metricsResponseWriter{
+		wrapped:    w,
+		statusCode: http.StatusOK,
+	}
+}
+
+// metricsResponseWriter.Header() calls the wrapped interface's Header() method.
+func (mw *metricsResponseWriter) Header() http.Header {
+	return mw.wrapped.Header()
+}
+
+// metricsResponseWriter.WriteHeader() calls the wrapped interface's
+// WriteHeader() method. Then, if the headers for this response haven't yet
+// been written, it records the response's status code and sets the calling
+// structs headerWritten field to true.
+func (mw *metricsResponseWriter) WriteHeader(statusCode int) {
+	mw.wrapped.WriteHeader(statusCode)
+	if !mw.headerWritten {
+		mw.headerWritten = true
+		mw.statusCode = statusCode
+	}
+}
+
+// metricsResponseWriter.Write() calls the wrapped interface's Write() method.
+// This will automatically write the headers if they haven't been written
+// already, but will leave the status code at the default (200). So before
+// calling the wrapped interface's Write() method, we set headerWritten to true.
+func (mw *metricsResponseWriter) Write(b []byte) (int, error) {
+	mw.headerWritten = true
+	return mw.wrapped.Write(b)
+}
+
+// metricsResponseWriter.Unwrap() returns the wrapped http.ResponseWriter
+// interface.
+func (mw *metricsResponseWriter) Unwrap() http.ResponseWriter {
+	return mw.wrapped
+}
+
+// The metrics middleware tracks some request specific data for sharing with
+// the /debug/vars endpoint. Tracked information:
+//
+//   - total number of requests recieved
+//   - total responses sent
+//   - total processing time (in microseconds)
+//   - a map of the total number responses sent for each status code
+func (app *application) metrics(next http.Handler) http.Handler {
+	var (
+		totalRequestsRecieved           = expvar.NewInt("total_requests_recieved")
+		totalResponsesSent              = expvar.NewInt("total_responses_sent")
+		totalProcessingTimeMicroseconds = expvar.NewInt("total_processing_time_μs")
+		totalResponsesSentByStatus      = expvar.NewMap("total_responses_sent_by_status")
+	)
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		totalRequestsRecieved.Add(1)
+
+		mw := newMetricResponseWriter(w)
+		next.ServeHTTP(mw, r)
+
+		// Increment response counter for the response's status code, as well as the
+		// counter of total responses.
+		totalResponsesSentByStatus.Add(strconv.Itoa(mw.statusCode), 1)
+		totalResponsesSent.Add(1)
+
+		duration := time.Since(start).Microseconds()
+		totalProcessingTimeMicroseconds.Add(duration)
 	})
 }
