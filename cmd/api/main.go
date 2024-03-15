@@ -79,10 +79,7 @@ func main() {
 		"Environment (development|staging|production)")
 
 	// Read DB-related settings from CLI flags.
-	flag.StringVar(&cfg.db.dsn,
-		"db-dsn",
-		os.Getenv("GREENLIGHT_DB_DSN"),
-		"Postgresql DSN")
+	flag.StringVar(&cfg.db.dsn, "db-dsn", "", "Postgresql DSN")
 	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "Postgresql max open connections")
 	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "Postgresql max idle connections")
 	flag.DurationVar(&cfg.db.maxIdleTime, "db-max-idle-time", 15*time.Minute, "Postgresql max connection idle time")
