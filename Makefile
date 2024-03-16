@@ -47,10 +47,7 @@ db/migrations/up: confirm
 ## audit: tidy dependencies and format, vet code and run all tests.
 #  Requires staticcheck: `go install honnef.co/go/tools/cmd/staticcheck@latest`
 .PHONY: audit
-audit:
-	@echo 'Tidying and verifying module dependencies...'
-	go mod tidy
-	go mod verify
+audit: vendor
 	@echo 'Formatting code...'
 	go fmt ./...
 	@echo 'Vetting code...'
@@ -59,3 +56,14 @@ audit:
 	@echo 'Running tests'
 	go test -race -vet=off ./...
 
+## vendor: tidy and vendor dependencies
+#  This command downloads copies of all dependencies into the vendor directory.
+#  It's important to run it frequently, including after adding new dependencies,
+#  so we've added it as a prereq of the audit command. 
+.PHONY: vendor
+vendor:
+	@echo 'Tidying and verifying module dependencies...'
+	go mod tidy
+	go mod verify
+	@echo 'Vendoring dependencies...'
+	go mod vendor
