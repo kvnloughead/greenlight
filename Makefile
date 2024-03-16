@@ -67,3 +67,23 @@ vendor:
 	go mod verify
 	@echo 'Vendoring dependencies...'
 	go mod vendor
+
+# ============================================================
+# BUILD
+# ============================================================
+
+## build/api: build the cmd/api application
+#  The -ldflags flag is used to reduce binary size by removing symbol tables and
+#  some debugging information.
+# 
+#  To build for other systems, specify the GOOS and GOARCH targets. For example,
+#  to target specifically target a linux/amd64 architecture, run the following
+#  command:
+#
+#  GOOS=linux GOARCH=amd64 go build -ldflags='-s -w' -o=./bin/api ./cmd/api
+# 
+.PHONY: build
+build/api:
+	@echo 'Building cmd/api...'
+	go build -ldflags='-s -w' -o=./bin/api ./cmd/api
+	
