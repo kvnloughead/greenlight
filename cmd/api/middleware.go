@@ -4,7 +4,6 @@ import (
 	"errors"
 	"expvar"
 	"fmt"
-	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,6 +12,8 @@ import (
 
 	validator "github.com/kvnloughead/greenlight/internal"
 	"github.com/kvnloughead/greenlight/internal/data"
+
+	"github.com/tomasen/realip"
 	"golang.org/x/time/rate"
 )
 
@@ -37,7 +38,10 @@ func (app *application) recoverPanic(next http.Handler) http.Handler {
 }
 
 // rateLimit is a middleware that limits the number of requests to an average of
-// 2 per second, with bursts of up to 4 seconds.
+// 2 per second per IP address, with bursts of up to 4 seconds.
+//
+// If an X-Forwarded-For or X-Real-IP header is found, the IP is taken from
+// there. Otherwise it is taken from r.RemoteAddr.
 //
 // If the limit is exceeded, a 429 Too Many Request response is sent to the
 // client.
@@ -73,12 +77,9 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if app.config.limiter.enabled {
-
-			ip, _, err := net.SplitHostPort(r.RemoteAddr)
-			if err != nil {
-				app.serverErrorResponse(w, r, err)
-				return
-			}
+			// Get IP address. If an X-Forwarded-For or X-Real-IP header is found, the
+			// IP is taken from there. Otherwise it is taken from r.RemoteAddr.
+			ip := realip.FromRequest(r)
 
 			mu.Lock()
 
