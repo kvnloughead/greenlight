@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"expvar"
 	"flag"
+	"fmt"
 	"log/slog"
 	"os"
 	"runtime"
@@ -104,7 +105,15 @@ func main() {
 			return nil
 		})
 
+	displayVersion := flag.Bool("version", false, "Display version and exit")
+
 	flag.Parse()
+
+	// If -version flag is set, display version and exit.
+	if *displayVersion {
+		fmt.Printf("Version:\t%s\n", version)
+		os.Exit(0)
+	}
 
 	// Create structured logger (to be added to dependencies).
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
