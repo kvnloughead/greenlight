@@ -15,10 +15,13 @@ import (
 
 	"github.com/kvnloughead/greenlight/internal/data"
 	"github.com/kvnloughead/greenlight/internal/mailer"
+	"github.com/kvnloughead/greenlight/internal/vcs"
 	_ "github.com/lib/pq"
 )
 
-const version = "1.0.0"
+var (
+	version = vcs.Version()
+)
 
 // config is a struct containing configuration settings. These settings are
 // specified as CLI flags when application starts, and have defaults provided
