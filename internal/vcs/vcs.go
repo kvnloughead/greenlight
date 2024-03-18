@@ -5,16 +5,23 @@ import (
 	"runtime/debug"
 )
 
-// Version returns a version number of the form "<revision-number>[-dirty]",
-// where <revision-number> is the current version control revision number, and
-// [-dirty] is included if the code in the binary has modifications that aren't
-// included in the revision.
+// Version returns a version number of the form
+//
+//	`<time>-<revision-number>[-dirty]`
+//
+// where <revision-number> is the current version control revision number,
+// <time> is the time the revision was made, and and [-dirty] is included if
+// the code in the binary has modifications that aren't included in the
+// revision.
 //
 // This information is obtained via debug.ReadBuildInfo(), which provides at
 // runtime the same information that is provided by `go version -m <binary>`.
 func Version() string {
-	var revision string
-	var modified bool
+	var (
+		revision string
+		time     string
+		modified bool
+	)
 
 	info, ok := debug.ReadBuildInfo()
 	if ok {
@@ -22,6 +29,8 @@ func Version() string {
 			switch s.Key {
 			case "vcs.revision":
 				revision = s.Value
+			case "vcs.time":
+				time = s.Value
 			case "vcs.modified":
 				if s.Value == "true" {
 					modified = true
@@ -31,8 +40,8 @@ func Version() string {
 	}
 
 	if modified {
-		return fmt.Sprintf("%s-dirty", revision)
+		return fmt.Sprintf("%s-%s-dirty", time, revision)
 	}
 
-	return revision
+	return fmt.Sprintf("%s-%s", time, revision)
 }
