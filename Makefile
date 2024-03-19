@@ -87,3 +87,13 @@ build/api:
 	@echo 'Building cmd/api...'
 	go build -ldflags='-s -w' -o=./bin/api ./cmd/api
 	
+# ============================================================
+# PRODUCTION
+# ============================================================
+
+production_host_ip = '64.23.233.245'
+
+## production/connect: connect to the production server
+.PHONY: production/connect
+production/connect:
+	ssh greenlight@${production_host_ip}
