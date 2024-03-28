@@ -95,3 +95,21 @@ production_host_ip = '64.23.233.245'
 .PHONY: production/connect
 production/connect:
 	ssh greenlight@${production_host_ip}
+
+## production/deploy/api: deploy the api to production server
+#  
+#  This command 
+#
+#    - copies the linux/amd64 api binary and migration files
+#      to the user directory on the server 
+#    - runs the migration files agains the psql database
+#
+#  The GREENLIGHT_DB_DSN environmental variable should already
+#  be set on the server. 
+#
+.PHONY: production/deploy/api
+production/deploy/api:
+	rsync -P ./bin/linux_amd64/api greenlight@${production_host_ip}:~
+	rsync -rP --delete ./migrations greenlight@${production_host_ip}:~
+	ssh -t greenlight@${production_host_ip} 'migrate -path ~/migrations -database $$GREENLIGHT_DB_DSN up'
+
