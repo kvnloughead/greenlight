@@ -76,16 +76,14 @@ vendor:
 #  The -ldflags flag is used to reduce binary size by removing symbol tables and
 #  some debugging information.
 # 
-#  To build for other systems, specify the GOOS and GOARCH targets. For example,
-#  to target specifically target a linux/amd64 architecture, run the following
-#  command:
-#
-#  GOOS=linux GOARCH=amd64 go build -ldflags='-s -w' -o=./bin/api ./cmd/api
+#  The go build execution targets the user's operating system. The second 
+#  execution targets a linux amd64 architecture.
 # 
 .PHONY: build
 build/api:
 	@echo 'Building cmd/api...'
 	go build -ldflags='-s -w' -o=./bin/api ./cmd/api
+	GOOS=linux GOARCH=amd64 go build -ldflags='-s -w' -o=./bin/linux_amd64/api ./cmd/api
 	
 # ============================================================
 # PRODUCTION
