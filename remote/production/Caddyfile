@@ -1,0 +1,17 @@
+http://64.23.233.245 {
+  # Prevent /debug/vars from being openly accessible. To view production 
+  # application metrics, either SSH into the server and run
+  #   
+  #  curl localhost:4000/debug/vars 
+  #
+  # or use an SSH tunnel:
+  # 
+  #   ssh -L :9999:64.23.233.245:4000 greenlight@64.23.233.245
+  #
+  # After establishing the tunnel, you can access the production metrics at
+  # http://localhost:9999/debug/vars.
+  #
+  respond /debug/* "Not Permitted" 403
+
+  reverse_proxy localhost:4000
+}

@@ -104,8 +104,10 @@ production/connect:
 #      and the systemd unit file to the user directory on the 
 #      server
 #    - runs the migration files agains the psql database
-#		 - moves the unit file to /etc/systemd/system
+#		 - copies the unit file to /etc/systemd/system
 #    - enables and restarts the api service with systemd
+#    - copies the Caddyfile to /etc/caddy and reloads the servic
+#      with systemctl
 #
 #  The GREENLIGHT_DB_DSN environmental variable should already
 #  be set on the server. 
@@ -115,10 +117,13 @@ production/deploy/api:
 	rsync -P ./bin/linux_amd64/api greenlight@${production_host_ip}:~
 	rsync -rP --delete ./migrations greenlight@${production_host_ip}:~
 	rsync -P ./remote/production/api.service greenlight@${production_host_ip}:~
+	rsync -P ./remote/production/Caddyfile greenlight@${production_host_ip}:~
 	ssh -t greenlight@${production_host_ip} '\
 		migrate -path ~/migrations -database $$GREENLIGHT_DB_DSN up \
 		&& sudo mv ~/api.service /etc/systemd/system/ \
 		&& sudo systemctl enable api \
 		&& sudo systemctl restart api \
+		&& sudo mv ~/Caddyfile /etc/caddy \
+		&& sudo systemctl reload caddy \
 	'
 
