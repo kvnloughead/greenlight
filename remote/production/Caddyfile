@@ -1,4 +1,4 @@
-http://64.23.233.245 {
+http://greenlight.kevinloughead.com {
   # Prevent /debug/vars from being openly accessible. To view production 
   # application metrics, either SSH into the server and run
   #   
