@@ -230,6 +230,11 @@ func (app *application) updateMovie(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// deleteMovie handles requests to DELETE /v1/movies/:id. If it finds a
+// document with the supplied ID it removes it from the database and sends a
+// JSON response: { "message": "movie successfully deleted" }
+//
+// If the document is not found, a 404 response is sent.
 func (app *application) deleteMovie(w http.ResponseWriter, r *http.Request) {
 	id, err := app.readIdParam(r)
 	if err != nil {
@@ -249,7 +254,7 @@ func (app *application) deleteMovie(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"message": "movie successful deleted"}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "movie successfuly deleted"}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
