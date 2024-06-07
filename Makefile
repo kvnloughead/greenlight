@@ -131,5 +131,5 @@ production/deploy/api:
 		&& sudo systemctl restart api \
 		&& sudo mv ~/Caddyfile /etc/caddy \
 		&& sudo systemctl reload caddy \
-	'
+	' && echo "Successfully deployed"
 
