@@ -2,6 +2,11 @@
   email kvnloughead@gmail.com
 }
 
+# Redirect HTTP to HTTPS.
+:80 {
+  redir https://{host}{uri} 308
+}
+
 greenlight.kevinloughead.com {
   # Prevent /debug/vars from being openly accessible. To view production 
   # application metrics, either SSH into the server and run
